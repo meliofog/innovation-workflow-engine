@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./camunda-h2-database
+  jpa:
+    hibernate:
+      ddl-auto: update
+  # Enable the H2 Web Console
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+camunda:
+  bpm:
+    admin-user:
+      id: demo
+      password: demo

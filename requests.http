@@ -1,0 +1,172 @@
+### ===================================================================
+### UTILITY REQUESTS (Use these to check status at any time)
+### ===================================================================
+
+### Get a list of all ideas and their current status
+GET http://localhost:8080/api/ideas
+
+### Get all open tasks for the Commission de qualification (CQ)
+GET http://localhost:8080/api/tasks?group=CQ
+
+### Get all open tasks for the Emetteur (EM)
+GET http://localhost:8080/api/tasks?group=EM
+
+### Get all open tasks for the Comité scientifique d’innovation (CSI)
+GET http://localhost:8080/api/tasks?group=CSI
+
+### Get all open tasks for the Equipe technique (DEV)
+GET http://localhost:8080/api/tasks?group=DEV
+
+
+### ===================================================================
+### SCENARIO 1: Idea is Postponed (Ajournée) and then Recycled
+### ===================================================================
+
+### 1. Emetteur: Submit a new idea
+# ACTION: Run this request. Copy the "id" from the response body (this is your IDEA_ID).
+POST http://localhost:8080/api/ideas
+Content-Type: application/json
+
+{
+  "titre": "Idea to be Postponed",
+  "description": "This idea will be postponed and resubmitted."
+}
+
+### 2. CQ: Automatically complete the first two tasks
+# ACTION: Paste the IDEA_ID from step 1 into the URL.
+POST http://localhost:8080/api/ideas/HERE_IDEA_ID/prioritize
+Content-Type: application/json
+
+{ "priority": "Medium" }
+
+
+### 3. CQ: Find and complete the "Qualifier" task with AJOURNEE
+# ACTION: Run `GET /api/tasks?group=CQ` to get the task ID for "Valider, Ajourner...".
+# Paste the TASK_ID below. Set a `dateEcheance` a few minutes in the future.
+POST http://localhost:8080/api/tasks/HERE_TASK_ID/complete
+Content-Type: application/json
+
+{
+  "resultatQualification": "AJOURNEE",
+  "dateEcheance": "2025-07-28T13:30:00"
+}
+
+### 4. Emetteur: Find and complete the "Traiter les idées ajournées" task
+# ACTION: The process is now waiting for the Emetteur.
+# Run `GET /api/tasks?group=EM` to find the new task. Paste its TASK_ID below.
+# This will trigger the recycle delegate.
+POST http://localhost:8080/api/tasks/HERE_TASK_ID/complete
+Content-Type: application/json
+
+{}
+
+### 5. Verification
+# ACTION: Run `GET /api/ideas`. The status of your idea should now be back to "EN_ATTENTE_DE_QUALIFICATION".
+# ACTION: Run `GET /api/tasks?group=CQ`. You will see a new "Qualifier l'idée soumise" task, proving the loop worked.
+# From here, you can continue the process normally by completing the task with "VALIDEE" and Complete the rest of the tasks.
+# in DEV stage "dateEcheance": "2025-07-28T13:30:00" is needed before each délai depassement verification
+POST http://localhost:8080/api/tasks/HERE_TASK_ID/complete
+Content-Type: application/json
+
+{}
+
+### ===================================================================
+### SCENARIO 2: Idea is Rejected (Rejetée) by the Qualification Team
+### ===================================================================
+
+### 1. Emetteur: Submit a new idea that will be rejected
+# ACTION: Run this request. Copy the "id" from the response body (this is your IDEA_ID).
+POST http://localhost:8080/api/ideas
+Content-Type: application/json
+
+{
+  "titre": "Idea to be Rejected",
+  "description": "This idea is not good enough."
+}
+
+### 2. CQ: Prioritize the idea
+# ACTION: Paste the IDEA_ID from step 1 into the URL.
+POST http://localhost:8080/api/ideas/HERE_IDEA_ID/prioritize
+Content-Type: application/json
+
+{ "priority": "Low" }
+
+### 3. CQ: Reject the idea
+# ACTION: Run `GET /api/tasks?group=CQ` to get the task ID for "Valider, Ajourner...".
+# Paste the TASK_ID below and complete it with "REJETEE".
+POST http://localhost:8080/api/tasks/HERE_TASK_ID/complete
+Content-Type: application/json
+
+{
+  "resultatQualification": "REJETEE",
+  "motifRejet": "This idea is outside the scope of our current business goals."
+}
+
+### 4. Verification
+# ACTION: Run `GET /api/ideas`. The status of this idea will now be "REJETEE" and the motifRejet field will be filled.
+# ACTION: Check Camunda Cockpit. The process instance will be in the "Finished" tab.
+
+
+### ===================================================================
+### SCENARIO 3: Idea is Archived (Archivée) after a failed POC
+### ===================================================================
+
+### 1. Emetteur: Submit a new idea for the POC stage
+# ACTION: Run this request. Copy the "id" from the response body (this is your IDEA_ID).
+POST http://localhost:8080/api/ideas
+Content-Type: application/json
+
+{
+  "titre": "Idea for Failed POC",
+  "description": "This idea will be archived after the POC."
+}
+
+### 2. CQ: Advance the process to the POC stage
+# ACTION: Prioritize the idea using its ID.
+POST http://localhost:8080/api/ideas/HERE_IDEA_ID/prioritize
+Content-Type: application/json
+
+{ "priority": "High" }
+
+
+
+### ACTION: Complete the "Valider..." task with "VALIDEE".
+# (First run GET /api/tasks?group=CQ to get the task ID).
+POST http://localhost:8080/api/tasks/HERE_TASK_ID/complete
+Content-Type: application/json
+
+{ "resultatQualification": "VALIDEE" }
+
+
+### 3. CSI: Complete parallel tasks to get to the decision point
+# ACTION: Run `GET /api/tasks?group=CSI`. You will get two tasks.
+# Complete both tasks using their respective IDs with an empty body `{}`.
+POST http://localhost:8080/api/tasks/HERE_TASK_ID_1/complete
+Content-Type: application/json
+
+{}
+
+###
+POST http://localhost:8080/api/tasks/HERE_TASK_ID_2/complete
+Content-Type: application/json
+
+{}
+
+
+### 4. CSI: Conclude the POC with a "defavorable" opinion
+# ACTION: First, get the POC ID for your idea.
+GET http://localhost:8080/api/ideas/HERE_IDEA_ID/poc
+
+# ACTION: Now, use the POC_ID from the response above to conclude the POC.
+# This will trigger the archive delegate and end the process.
+POST http://localhost:8080/api/pocs/HERE_POC_ID/conclude
+Content-Type: application/json
+
+{
+  "conclusion": "The proof of concept did not yield the expected results.",
+  "decision": "defavorable"
+}
+
+### 5. Verification
+# ACTION: Run `GET /api/ideas`. The status of this idea will be "ARCHIVEE".
+# ACTION: Check Camunda Cockpit. The process instance will be in the "Finished" tab.
