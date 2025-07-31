@@ -15,3 +15,6 @@ camunda:
     admin-user:
       id: demo
       password: demo
+# Add this section to enable Camunda's security filter
+camunda.bpm.webapp.security:
+  enabled: true

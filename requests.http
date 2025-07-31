@@ -3,7 +3,9 @@
 ### ===================================================================
 
 ### Get a list of all ideas and their current status
+### Get all ideas (Authenticated)
 GET http://localhost:8080/api/ideas
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcVVzZXIiLCJpYXQiOjE3NTM5MjM5MDEsImV4cCI6MTc1Mzk1OTkwMX0.g0-Bp68XrhJTlsmuSZXMXgZsQtIwmusOQZhFFw0woEw
 
 ### Get all open tasks for the Commission de qualification (CQ)
 GET http://localhost:8080/api/tasks?group=CQ
@@ -18,6 +20,15 @@ GET http://localhost:8080/api/tasks?group=CSI
 GET http://localhost:8080/api/tasks?group=DEV
 
 
+### Login to get a token
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "cqUser",
+  "password": "password"
+}
+
 ### ===================================================================
 ### SCENARIO 1: Idea is Postponed (Ajournée) and then Recycled
 ### ===================================================================
@@ -25,6 +36,7 @@ GET http://localhost:8080/api/tasks?group=DEV
 ### 1. Emetteur: Submit a new idea
 # ACTION: Run this request. Copy the "id" from the response body (this is your IDEA_ID).
 POST http://localhost:8080/api/ideas
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcVVzZXIiLCJpYXQiOjE3NTM5MjM5MDEsImV4cCI6MTc1Mzk1OTkwMX0.g0-Bp68XrhJTlsmuSZXMXgZsQtIwmusOQZhFFw0woEw
 Content-Type: application/json
 
 {
