@@ -1,6 +1,7 @@
 package com.innovation.config;
 
 import com.innovation.security.JwtRequestFilter;
+import jakarta.servlet.Filter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 public class FilterConfig {
 
     @Bean
-    public FilterRegistrationBean<JwtRequestFilter> jwtFilter(JwtRequestFilter jwtRequestFilter) {
-        FilterRegistrationBean<JwtRequestFilter> registrationBean = new FilterRegistrationBean<>();
+    public FilterRegistrationBean<Filter> jwtFilter(JwtRequestFilter jwtRequestFilter) {
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(jwtRequestFilter);
-        // Apply this filter to all of our custom API endpoints
-        registrationBean.addUrlPatterns("/api/ideas/*", "/api/tasks/*", "/api/pocs/*");
+        // This will apply the filter to ALL requests
+        registrationBean.addUrlPatterns("/*");
         return registrationBean;
     }
 }

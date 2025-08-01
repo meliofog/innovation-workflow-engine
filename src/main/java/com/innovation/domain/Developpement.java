@@ -16,6 +16,7 @@ public class Developpement {
     private LocalDate dateFin;
     private String description;
     private String statutDev; // e.g., "EN_COURS", "TERMINE"
+    private String avisNegatif; // <-- ADD THIS LINE
 
     @OneToOne
     @JoinColumn(name = "idea_id")

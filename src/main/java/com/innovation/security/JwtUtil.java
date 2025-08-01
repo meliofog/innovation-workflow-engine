@@ -3,24 +3,20 @@ package com.innovation.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys; // <-- Add this import
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey; // <-- Add this import
-import java.nio.charset.StandardCharsets; // <-- Add this import
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 @Service
 public class JwtUtil {
-
-    // IMPORTANT: In a real application, this secret key should be stored securely
-    // in your application.properties and not hardcoded.
     private final String SECRET_STRING = "a-very-long-and-super-secret-key-for-your-innovation-app";
-
-    // Create a secure key object from the string
     private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_STRING.getBytes(StandardCharsets.UTF_8));
 
     public String extractUsername(String token) {
@@ -31,13 +27,16 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    public List<String> extractGroups(String token) {
+        return extractClaim(token, claims -> (List<String>) claims.get("groups"));
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        // Use the SecretKey object for parsing
         return Jwts.parserBuilder().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
     }
 
@@ -45,8 +44,9 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String username, List<String> groups) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("groups", groups);
         return createToken(claims, username);
     }
 
@@ -55,8 +55,8 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Token is valid for 10 hours
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS256).compact(); // Use the SecretKey object for signing
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
+                .signWith(SECRET_KEY, SignatureAlgorithm.HS256).compact();
     }
 
     public Boolean validateToken(String token) {

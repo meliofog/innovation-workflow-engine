@@ -1,5 +1,6 @@
 package com.innovation.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
@@ -21,24 +23,28 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authorizationHeader = request.getHeader("Authorization");
+        String username = null;
+        String jwt = null;
 
-        // If there is no token, block the request
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Authorization token is missing or invalid.");
-            return;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            jwt = authorizationHeader.substring(7);
+            try {
+                username = jwtUtil.extractUsername(jwt);
+            } catch (Exception e) {
+                // Token is invalid, we can ignore it and let the request proceed
+                // It will be blocked later if the endpoint requires authentication
+            }
         }
 
-        String jwt = authorizationHeader.substring(7);
-
-        // If the token is invalid, block the request
-        if (!jwtUtil.validateToken(jwt)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid or expired token.");
-            return;
+        if (username != null) {
+            if (jwtUtil.validateToken(jwt)) {
+                // If token is valid, add user details to the request attributes
+                List<String> groups = jwtUtil.extractGroups(jwt);
+                request.setAttribute("username", username);
+                request.setAttribute("userGroups", groups);
+            }
         }
 
-        // If the token is valid, continue to the controller
         filterChain.doFilter(request, response);
     }
 }

@@ -5,19 +5,23 @@
 ### Get a list of all ideas and their current status
 ### Get all ideas (Authenticated)
 GET http://localhost:8080/api/ideas
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcVVzZXIiLCJpYXQiOjE3NTM5MjM5MDEsImV4cCI6MTc1Mzk1OTkwMX0.g0-Bp68XrhJTlsmuSZXMXgZsQtIwmusOQZhFFw0woEw
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiRU0iXSwic3ViIjoiZW1ldHRldXJVc2VyIiwiaWF0IjoxNzU0MDAxNzAyLCJleHAiOjE3NTQwMzc3MDJ9.96qFhq3yWwJtYmIinqyhwvxTinTIAFzhV3TU-jATvvQ
 
 ### Get all open tasks for the Commission de qualification (CQ)
 GET http://localhost:8080/api/tasks?group=CQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiQ1EiXSwic3ViIjoiY3FVc2VyIiwiaWF0IjoxNzUzOTI1MTg2LCJleHAiOjE3NTM5NjExODZ9.VECID2G5T5DQ9fVJBejH0C6O-3qIiTFF2tLlCwEsdn4
 
 ### Get all open tasks for the Emetteur (EM)
 GET http://localhost:8080/api/tasks?group=EM
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiRU0iXSwic3ViIjoiZW1ldHRldXJVc2VyIiwiaWF0IjoxNzU0MDAxNzAyLCJleHAiOjE3NTQwMzc3MDJ9.96qFhq3yWwJtYmIinqyhwvxTinTIAFzhV3TU-jATvvQ
 
 ### Get all open tasks for the Comité scientifique d’innovation (CSI)
 GET http://localhost:8080/api/tasks?group=CSI
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiQ1EiXSwic3ViIjoiY3FVc2VyIiwiaWF0IjoxNzUzOTI1MTg2LCJleHAiOjE3NTM5NjExODZ9.VECID2G5T5DQ9fVJBejH0C6O-3qIiTFF2tLlCwEsdn4
 
 ### Get all open tasks for the Equipe technique (DEV)
 GET http://localhost:8080/api/tasks?group=DEV
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiQ1EiXSwic3ViIjoiY3FVc2VyIiwiaWF0IjoxNzUzOTI1MTg2LCJleHAiOjE3NTM5NjExODZ9.VECID2G5T5DQ9fVJBejH0C6O-3qIiTFF2tLlCwEsdn4
 
 
 ### Login to get a token
@@ -25,7 +29,7 @@ POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-  "username": "cqUser",
+  "username": "emetteurUser",
   "password": "password"
 }
 
@@ -36,7 +40,7 @@ Content-Type: application/json
 ### 1. Emetteur: Submit a new idea
 # ACTION: Run this request. Copy the "id" from the response body (this is your IDEA_ID).
 POST http://localhost:8080/api/ideas
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcVVzZXIiLCJpYXQiOjE3NTM5MjM5MDEsImV4cCI6MTc1Mzk1OTkwMX0.g0-Bp68XrhJTlsmuSZXMXgZsQtIwmusOQZhFFw0woEw
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJncm91cHMiOlsiRU0iXSwic3ViIjoiZW1ldHRldXJVc2VyIiwiaWF0IjoxNzU0MDAxNzAyLCJleHAiOjE3NTQwMzc3MDJ9.96qFhq3yWwJtYmIinqyhwvxTinTIAFzhV3TU-jATvvQ
 Content-Type: application/json
 
 {

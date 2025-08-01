@@ -28,24 +28,34 @@ public class SaveProjectDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) throws Exception {
         Long ideaId = (Long) execution.getVariable("ideaId");
-        LOGGER.info("Enregistrement du projet final pour l'idée ID: {}", ideaId);
+        String conclusion = (String) execution.getVariable("conclusion"); // "ok" or "nok"
+
+        LOGGER.info("Saving final project status for idea ID: {} with conclusion: {}", ideaId, conclusion);
 
         Idea idea = ideaRepository.findById(ideaId)
-                .orElseThrow(() -> new RuntimeException("Idée non trouvée avec l'id: " + ideaId));
+                .orElseThrow(() -> new RuntimeException("Idea not found with id: " + ideaId));
 
-        // Mettre à jour l'idée avec son statut final
-        idea.setStatut("REALISEE");
-        idea.setDateStatus(LocalDateTime.now());
-        ideaRepository.save(idea);
-
-        // Trouver et mettre à jour l'enregistrement de développement
         Developpement developpement = developpementRepository.findByIdeaId(ideaId)
-                .orElseThrow(() -> new RuntimeException("Développement non trouvé pour l'idée id: " + ideaId));
+                .orElseThrow(() -> new RuntimeException("Development record not found for idea id: " + ideaId));
 
-        developpement.setStatutDev("TERMINE");
-        developpement.setDateFin(LocalDate.now());
+        if ("ok".equalsIgnoreCase(conclusion)) {
+            // Happy path: The project is realized
+            idea.setStatut("REALISEE");
+            idea.setDateStatus(LocalDateTime.now());
+
+            developpement.setStatutDev("TERMINE");
+            developpement.setDateFin(LocalDate.now());
+        } else {
+            // Negative feedback path
+            String avisNegatif = (String) execution.getVariable("avisNegatif");
+            developpement.setAvisNegatif(avisNegatif);
+            // The idea status might remain "EN_DEVELOPPEMENT" for further action
+            idea.setStatut("MVP_REFUSE");
+        }
+
+        ideaRepository.save(idea);
         developpementRepository.save(developpement);
 
-        LOGGER.info("Le projet pour l'idée ID: {} a été enregistré et son statut mis à jour.", ideaId);
+        LOGGER.info("Project for idea ID: {} has been saved. Final status: {}", ideaId, idea.getStatut());
     }
 }

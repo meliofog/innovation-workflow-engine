@@ -19,17 +19,19 @@ public class UserDataGenerator implements CommandLineRunner {
         createGroup("CSI", "Comité scientifique d’innovation");
         createGroup("CQ", "Commission de qualification");
         createGroup("DEV", "Equipe technique");
-        createGroup("EM", "Emetteur"); // <-- ADD THIS LINE
+        createGroup("EM", "Emetteur");
 
         // Create Users if they don't exist
         createUser("emetteurUser", "Emetteur", "User", "password", "emetteur@demo.com");
         createUser("cqUser", "Commission", "Qualification", "password", "cq@demo.com");
         createUser("csiUser", "Comite", "Scientifique", "password", "csi@demo.com");
+        createUser("devUser", "Developer", "User", "password", "dev@demo.com"); // <-- ADD THIS LINE
 
         // Create Memberships with the new user IDs
         createMembership("cqUser", "CQ");
         createMembership("csiUser", "CSI");
-        createMembership("emetteurUser", "EM"); // <-- ADD THIS LINE
+        createMembership("emetteurUser", "EM");
+        createMembership("devUser", "DEV"); // <-- ADD THIS LINE
     }
 
     private void createGroup(String groupId, String groupName) {

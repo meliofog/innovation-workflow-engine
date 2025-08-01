@@ -37,3 +37,10 @@ buildNumber.properties
 # IDE
 .idea/
 *.iml
+# --- Node / React Frontend ---
+innovation-ui/node_modules/
+innovation-ui/dist/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

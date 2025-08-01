@@ -40,10 +40,10 @@ public class IdeaController {
         return ResponseEntity.ok(createdIdea);
     }
 
-    @PostMapping("/{ideaId}/prioritize")
-    public ResponseEntity<Idea> prioritizeIdea(@PathVariable Long ideaId, @RequestBody Map<String, String> request) {
+    @PostMapping("/{processInstanceId}/prioritize") // Changed from ideaId
+    public ResponseEntity<Idea> prioritizeIdea(@PathVariable String processInstanceId, @RequestBody Map<String, String> request) {
         String priority = request.get("priority");
-        Idea updatedIdea = ideaService.prioritizeIdea(ideaId, priority);
+        Idea updatedIdea = ideaService.prioritizeIdea(processInstanceId, priority);
         return ResponseEntity.ok(updatedIdea);
     }
 }
