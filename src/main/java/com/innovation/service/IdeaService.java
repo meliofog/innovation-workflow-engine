@@ -3,17 +3,19 @@ package com.innovation.service;
 import com.innovation.domain.Document;
 import com.innovation.domain.Idea;
 import com.innovation.dto.IdeaDetailsDto;
+import com.innovation.repository.DeveloppementRepository;
 import com.innovation.repository.DocumentRepository;
 import com.innovation.repository.IdeaRepository;
+import com.innovation.repository.POCRepository;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.runtime.ProcessInstance; // <-- Add this import
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // <-- Add this import
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,14 +26,15 @@ public class IdeaService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IdeaService.class);
 
-    @Autowired
-    private IdeaRepository ideaRepository;
-    @Autowired
-    private RuntimeService runtimeService;
-    @Autowired
-    private TaskService taskService;
-    @Autowired
-    private DocumentRepository documentRepository;
+    @Autowired private IdeaRepository ideaRepository;
+    @Autowired private RuntimeService runtimeService;
+    @Autowired private TaskService taskService;
+
+    // Inject all necessary repositories
+    @Autowired private DocumentRepository documentRepository;
+    @Autowired private POCRepository pocRepository;
+    @Autowired private DeveloppementRepository developpementRepository;
+
 
     public Idea createIdea(Idea idea) {
         Idea savedIdea = ideaRepository.save(idea);
@@ -76,15 +79,19 @@ public class IdeaService {
         return ideaRepository.save(idea);
     }
 
-    // --- THIS METHOD IS NOW CORRECTED ---
-    @Transactional // Ensures both operations (Camunda and DB) succeed or fail together
+    // --- THIS METHOD IS NOW CORRECTED FOR CASCADE DELETE ---
+    @Transactional
     public void deleteIdea(Long ideaId) {
-        // Step 1: Find the running process instance using the ideaId as the business key.
+        // Step 1: Delete all dependent records first to avoid constraint violations.
+        documentRepository.deleteAll(documentRepository.findByIdeaId(ideaId));
+        pocRepository.findByIdeaId(ideaId).ifPresent(pocRepository::delete);
+        developpementRepository.findByIdeaId(ideaId).ifPresent(developpementRepository::delete);
+
+        // Step 2: Find and delete the running process instance.
         ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
                 .processInstanceBusinessKey(ideaId.toString())
                 .singleResult();
 
-        // Step 2: If a process instance exists, delete it.
         if (processInstance != null) {
             runtimeService.deleteProcessInstance(processInstance.getId(), "Idea deleted by user.");
             LOGGER.info("Deleted process instance {} for idea ID: {}", processInstance.getId(), ideaId);
@@ -92,7 +99,7 @@ public class IdeaService {
             LOGGER.warn("No running process instance found for idea ID: {}", ideaId);
         }
 
-        // Step 3: Delete the idea from our application's database.
+        // Step 3: Now it's safe to delete the idea itself.
         ideaRepository.deleteById(ideaId);
         LOGGER.info("Deleted idea with ID: {}", ideaId);
     }
