@@ -95,4 +95,41 @@ export const apiService = {
       if (!response.ok) throw new Error('Failed to upload document');
       return response.text();
     },
+    getDashboardStats: async (token) => {
+      const response = await fetch('/api/dashboard/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch dashboard stats');
+      return response.json();
+    },
+    // NEW: Update an existing idea
+    updateIdea: async (token, ideaId, ideaData) => {
+      const response = await fetch(`/api/ideas/${ideaId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(ideaData),
+      });
+      if (!response.ok) throw new Error('Failed to update idea');
+      return response.json();
+    },
+
+    // NEW: Delete an idea
+    deleteIdea: async (token, ideaId) => {
+      const response = await fetch(`/api/ideas/${ideaId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to delete idea');
+    },
+    // NEW: Get full details for a single idea, including documents
+    getIdeaDetails: async (token, ideaId) => {
+      const response = await fetch(`/api/ideas/${ideaId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch idea details');
+      return response.json();
+    },
   };
