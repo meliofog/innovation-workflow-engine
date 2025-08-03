@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
-import { PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'; // Add EyeIcon
+import { PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'; // EyeIcon is added
 
-export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // Add onViewIdea prop
+export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onViewIdea prop is added
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
-import { TaskModal } from './TaskModal'; // We will use the modal for assigned tasks
+import { TaskModal } from './TaskModal'; 
+import toast from 'react-hot-toast';
 
 export const MyTasksPage = ({ token, user }) => {
   const [assignedTasks, setAssignedTasks] = useState([]);
@@ -38,18 +39,22 @@ export const MyTasksPage = ({ token, user }) => {
   }, [token, user]);
 
   const handleClaim = async (taskId) => {
-    try {
-      await apiService.claimTask(token, taskId);
-      fetchAllTasks(); // Refresh both lists after claiming
-    } catch (err) {
-      alert("Failed to claim task.");
-    }
+    const promise = apiService.claimTask(token, taskId);
+    toast.promise(promise, {
+      loading: 'Claiming task...',
+      success: () => {
+        fetchAllTasks(); // Refresh list on success
+        return 'Task claimed successfully!';
+      },
+      error: 'Failed to claim task.',
+    });
   };
   
   const handleTaskCompleted = () => {
-      setSelectedTask(null); // Close the modal
-      fetchAllTasks(); // Refresh the task lists
-  }
+      setSelectedTask(null);
+      fetchAllTasks();
+      toast.success('Task completed!');
+  };
 
   return (
     <div className="space-y-8">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiService } from './api/apiService';
 import { LoginPage } from './components/LoginPage';
 import { AppLayout } from './components/AppLayout';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const [token, setToken] = useState(null);
@@ -51,6 +52,7 @@ export default function App() {
 
   return (
     <div id="root">
+      <Toaster position="bottom-right" /> {/* <-- 2. Add the Toaster component here */}
       {user ? (
         <AppLayout token={token} user={user} onLogout={handleLogout} />
       ) : (

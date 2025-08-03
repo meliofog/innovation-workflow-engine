@@ -1,6 +1,10 @@
 package com.innovation.controller;
 
+import com.innovation.domain.Idea;
+import com.innovation.dto.TaskDetailsDto;
+import com.innovation.repository.IdeaRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.camunda.bpm.engine.task.Task;
@@ -24,7 +28,12 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
-    // This is the NEW, unified endpoint for fetching all of a user's tasks
+    @Autowired
+    private RuntimeService runtimeService;
+
+    @Autowired
+    private IdeaRepository ideaRepository;
+
     @GetMapping
     public ResponseEntity<?> getMyTasks(HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
@@ -34,23 +43,10 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
 
-        // Create a query for tasks directly assigned to the user
-        List<Task> assignedTasks = taskService.createTaskQuery()
-                .taskAssignee(username)
-                .active()
-                .list();
+        List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
+        List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
+                taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
 
-        // Create a query for tasks available to the user's groups
-        List<Task> groupTasks = Collections.emptyList();
-        if (userGroups != null && !userGroups.isEmpty()) {
-            groupTasks = taskService.createTaskQuery()
-                    .taskCandidateGroupIn(userGroups)
-                    .taskUnassigned()
-                    .active()
-                    .list();
-        }
-
-        // Combine the lists and convert to DTOs
         List<Task> allTasks = new java.util.ArrayList<>();
         allTasks.addAll(assignedTasks);
         allTasks.addAll(groupTasks);
@@ -60,6 +56,25 @@ public class TaskController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(taskDtos);
+    }
+
+    // --- THIS IS THE MISSING ENDPOINT ---
+    @GetMapping("/{taskId}/details")
+    public ResponseEntity<?> getTaskDetails(@PathVariable String taskId) {
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found.");
+        }
+
+        // Get the ideaId from the process variables
+        Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
+        Idea idea = ideaRepository.findById(ideaId)
+                .orElseThrow(() -> new RuntimeException("Idea not found for task."));
+
+        TaskDto taskDto = TaskDto.fromEntity(task);
+        TaskDetailsDto taskDetails = new TaskDetailsDto(taskDto, idea);
+
+        return ResponseEntity.ok(taskDetails);
     }
 
     @PostMapping("/{taskId}/claim")
@@ -80,8 +95,8 @@ public class TaskController {
     @PostMapping("/{taskId}/complete")
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> variables, HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
-
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+
         if (task == null || !username.equals(task.getAssignee())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not authorized to complete this task.");
         }

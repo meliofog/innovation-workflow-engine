@@ -132,4 +132,12 @@ export const apiService = {
       if (!response.ok) throw new Error('Failed to fetch idea details');
       return response.json();
     },
+    // NEW: Get full details for a single task, including the associated idea
+    getTaskDetails: async (token, taskId) => {
+      const response = await fetch(`/api/tasks/${taskId}/details`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch task details');
+      return response.json();
+    },
   };
