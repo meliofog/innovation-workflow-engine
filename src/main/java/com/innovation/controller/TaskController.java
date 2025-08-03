@@ -34,6 +34,7 @@ public class TaskController {
     @Autowired
     private IdeaRepository ideaRepository;
 
+    // THIS METHOD IS UPDATED to return rich details for each task
     @GetMapping
     public ResponseEntity<?> getMyTasks(HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
@@ -43,6 +44,7 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
 
+        // Fetch all assigned and group tasks
         List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
         List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
                 taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
@@ -51,11 +53,14 @@ public class TaskController {
         allTasks.addAll(assignedTasks);
         allTasks.addAll(groupTasks);
 
-        List<TaskDto> taskDtos = allTasks.stream()
-                .map(TaskDto::fromEntity)
-                .collect(Collectors.toList());
+        // For each task, fetch its associated idea and create our rich DTO
+        List<TaskDetailsDto> detailedTasks = allTasks.stream().map(task -> {
+            Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
+            Idea idea = ideaRepository.findById(ideaId).orElse(null); // Find the related idea
+            return new TaskDetailsDto(TaskDto.fromEntity(task), idea);
+        }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(taskDtos);
+        return ResponseEntity.ok(detailedTasks);
     }
 
     // --- THIS IS THE MISSING ENDPOINT ---
@@ -89,6 +94,27 @@ public class TaskController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not claim task: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{taskId}/unclaim")
+    public ResponseEntity<?> unclaimTask(@PathVariable String taskId, HttpServletRequest request) {
+        String username = (String) request.getAttribute("username");
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
+        }
+
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        // Security check: Only the current assignee can unclaim the task.
+        if (task == null || !username.equals(task.getAssignee())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not the assignee of this task.");
+        }
+
+        try {
+            taskService.setAssignee(taskId, null); // Setting assignee to null unclaims the task
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not unclaim task: " + e.getMessage());
         }
     }
 

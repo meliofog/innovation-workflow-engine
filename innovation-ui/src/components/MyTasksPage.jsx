@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
-import { TaskModal } from './TaskModal'; 
+import { TaskModal } from './TaskModal';
 import toast from 'react-hot-toast';
+
 
 export const MyTasksPage = ({ token, user }) => {
   const [assignedTasks, setAssignedTasks] = useState([]);
@@ -10,17 +11,15 @@ export const MyTasksPage = ({ token, user }) => {
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // This function now fetches all tasks and separates them client-side
   const fetchAllTasks = async () => {
     setLoading(true);
     setError('');
     try {
-      // 1. Call the single, unified endpoint
       const allTasks = await apiService.getMyTasks(token);
-
-      // 2. Filter the tasks into two lists based on whether they have an assignee
-      const assigned = allTasks.filter(task => task.assignee !== null);
-      const group = allTasks.filter(task => task.assignee === null);
+      
+      // Filter the tasks into two lists
+      const assigned = allTasks.filter(taskDetail => taskDetail.task.assignee !== null);
+      const group = allTasks.filter(taskDetail => taskDetail.task.assignee === null);
       
       setAssignedTasks(assigned);
       setGroupTasks(group);
@@ -50,11 +49,23 @@ export const MyTasksPage = ({ token, user }) => {
     });
   };
   
-  const handleTaskCompleted = () => {
-      setSelectedTask(null);
-      fetchAllTasks();
-      toast.success('Task completed!');
+  const handleUnclaim = async (taskId) => {
+    const promise = apiService.unclaimTask(token, taskId);
+    toast.promise(promise, {
+      loading: 'Unclaiming task...',
+      success: () => {
+        fetchAllTasks(); // Refresh both lists on success
+        return 'Task returned to group queue!';
+      },
+      error: 'Failed to unclaim task.',
+    });
   };
+
+  const handleTaskCompleted = () => {
+    setSelectedTask(null);
+    fetchAllTasks();
+    toast.success('Task completed!');
+};
 
   return (
     <div className="space-y-8">
@@ -62,18 +73,27 @@ export const MyTasksPage = ({ token, user }) => {
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">My Assigned Tasks</h2>
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul role="list" className="divide-y divide-gray-200">
-            {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
-            {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">You have no assigned tasks.</li>}
-            {assignedTasks.map((task) => (
-              <li key={task.id}>
+          {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
+          {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">You have no assigned tasks.</li>}
+            {assignedTasks.map((taskDetail) => (
+              <li key={taskDetail.task.id}>
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                   <div>
-                    <p className="text-md font-medium text-indigo-600 truncate">{task.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(task.created).toLocaleString()}</p>
+                    <p className="text-md font-medium text-indigo-600 truncate">{taskDetail.task.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Related Idea: <span className="font-medium">{taskDetail.idea?.titre || 'N/A'}</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(taskDetail.task.created).toLocaleString()}</p>
                   </div>
-                  <button onClick={() => setSelectedTask(task)} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
-                    Work on Task
-                  </button>
+                  {/* --- THIS SECTION IS UPDATED --- */}
+                  <div className="flex items-center space-x-2">
+                    <button onClick={() => handleUnclaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-red-100 rounded-md hover:bg-gray-200">
+                      Unclaim
+                    </button>
+                    <button onClick={() => setSelectedTask(taskDetail.task)} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                      Work on Task
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -87,14 +107,18 @@ export const MyTasksPage = ({ token, user }) => {
           <ul role="list" className="divide-y divide-gray-200">
             {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
             {!loading && groupTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">No tasks available for your groups.</li>}
-            {groupTasks.map((task) => (
-              <li key={task.id}>
+            {groupTasks.map((taskDetail) => (
+              <li key={taskDetail.task.id}>
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                   <div>
-                    <p className="text-md font-medium text-indigo-600 truncate">{task.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(task.created).toLocaleString()}</p>
+                    <p className="text-md font-medium text-indigo-600 truncate">{taskDetail.task.name}</p>
+                    {/* --- THIS IS THE FIX --- */}
+                    <p className="text-sm text-gray-500 mt-1">
+                      Related Idea: <span className="font-medium">{taskDetail.idea?.titre || 'N/A'}</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(taskDetail.task.created).toLocaleString()}</p>
                   </div>
-                  <button onClick={() => handleClaim(task.id)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                  <button onClick={() => handleClaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                     Claim
                   </button>
                 </div>

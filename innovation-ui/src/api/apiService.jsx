@@ -49,6 +49,14 @@ export const apiService = {
       });
       if (!response.ok) throw new Error('Failed to claim task');
     },
+    // NEW: Unclaim a task
+    unclaimTask: async (token, taskId) => {
+      const response = await fetch(`/api/tasks/${taskId}/unclaim`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to unclaim task');
+    },
     completeTask: async (token, taskId, variables) => {
       const response = await fetch(`/api/tasks/${taskId}/complete`, {
         method: 'POST',

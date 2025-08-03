@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
 import { PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'; // EyeIcon is added
+import toast from 'react-hot-toast';
 
 export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onViewIdea prop is added
   const [ideas, setIdeas] = useState([]);
@@ -26,15 +27,35 @@ export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onVie
     fetchIdeas();
   }, [token]);
   
-  const handleDelete = async (ideaId) => {
-    if (window.confirm("Are you sure you want to delete this idea?")) {
-      try {
-        await apiService.deleteIdea(token, ideaId);
-        fetchIdeas(); // Refresh the list
-      } catch (err) {
-        alert("Failed to delete idea.");
-      }
-    }
+  const handleDelete = (ideaId) => {
+    // This creates a custom toast with confirmation buttons
+    toast((t) => (
+      <div className="flex flex-col items-center gap-4">
+        <p className="font-semibold">Are you sure you want to delete this idea?</p>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+            onClick={() => {
+              const promise = apiService.deleteIdea(token, ideaId).then(() => fetchIdeas());
+              toast.promise(promise, {
+                  loading: 'Deleting idea...',
+                  success: 'Idea deleted successfully!',
+                  error: 'Failed to delete idea.',
+              });
+              toast.dismiss(t.id); // Close the confirmation toast
+            }}
+          >
+            Delete
+          </button>
+          <button
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+            onClick={() => toast.dismiss(t.id)}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), { duration: 6000 }); // The toast will stay for 6 seconds
   };
 
   // Helper to determine priority color

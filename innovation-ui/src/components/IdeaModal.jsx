@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
+import toast from 'react-hot-toast';
 
 // This modal now handles both creating a new idea and editing an existing one.
 export const IdeaModal = ({ token, ideaToEdit, onClose, onSave }) => {
@@ -20,18 +21,19 @@ export const IdeaModal = ({ token, ideaToEdit, onClose, onSave }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            if (isEditing) {
-                // Call the update service if editing
-                await apiService.updateIdea(token, ideaToEdit.id, { titre, description });
-            } else {
-                // Call the submit service if creating
-                await apiService.submitIdea(token, { titre, description });
-            }
-            onSave(); // A single callback for both create and update
-        } catch (err) {
-            setError(isEditing ? 'Failed to update idea.' : 'Failed to submit idea.');
-        }
+        const promise = isEditing 
+            ? apiService.updateIdea(token, ideaToEdit.id, { titre, description })
+            : apiService.submitIdea(token, { titre, description });
+
+        // 2. Use toast.promise to handle the async operation
+        toast.promise(promise, {
+            loading: isEditing ? 'Updating idea...' : 'Submitting idea...',
+            success: (data) => {
+                onSave(); // Call the onSave callback on success
+                return isEditing ? 'Idea updated successfully!' : 'Idea submitted successfully!';
+            },
+            error: isEditing ? 'Failed to update idea.' : 'Failed to submit idea.',
+        });
     };
 
     return (
