@@ -5,6 +5,7 @@ import com.innovation.domain.POC;
 import com.innovation.service.IdeaService;
 import com.innovation.service.PocService;
 import com.innovation.dto.IdeaDetailsDto;
+import com.innovation.dto.FullIdeaDetailsDto;
 import jakarta.servlet.http.HttpServletRequest; // <-- Add this import
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus; // <-- Add this import
@@ -82,8 +83,8 @@ public class IdeaController {
     }
 
     @GetMapping("/{ideaId}")
-    public ResponseEntity<IdeaDetailsDto> getIdeaById(@PathVariable Long ideaId) {
-        IdeaDetailsDto ideaDetails = ideaService.getIdeaDetails(ideaId);
+    public ResponseEntity<FullIdeaDetailsDto> getIdeaById(@PathVariable Long ideaId) {
+        FullIdeaDetailsDto ideaDetails = ideaService.getIdeaDetails(ideaId);
         return ResponseEntity.ok(ideaDetails);
     }
 

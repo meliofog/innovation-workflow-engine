@@ -1,8 +1,11 @@
 package com.innovation.service;
 
+import com.innovation.domain.Developpement;
 import com.innovation.domain.Document;
 import com.innovation.domain.Idea;
+import com.innovation.domain.POC;
 import com.innovation.dto.IdeaDetailsDto;
+import com.innovation.dto.FullIdeaDetailsDto;
 import com.innovation.repository.DeveloppementRepository;
 import com.innovation.repository.DocumentRepository;
 import com.innovation.repository.IdeaRepository;
@@ -104,11 +107,16 @@ public class IdeaService {
         LOGGER.info("Deleted idea with ID: {}", ideaId);
     }
 
-    public IdeaDetailsDto getIdeaDetails(Long ideaId) {
+    public FullIdeaDetailsDto getIdeaDetails(Long ideaId) {
         Idea idea = ideaRepository.findById(ideaId)
                 .orElseThrow(() -> new RuntimeException("Idea not found with id: " + ideaId));
+
+        // Fetch all related entities (they might be null if the stage hasn't been reached)
+        POC poc = pocRepository.findByIdeaId(ideaId).orElse(null);
+        Developpement developpement = developpementRepository.findByIdeaId(ideaId).orElse(null);
         List<Document> documents = documentRepository.findByIdeaId(ideaId);
-        return new IdeaDetailsDto(idea, documents);
+
+        return new FullIdeaDetailsDto(idea, poc, developpement, documents);
     }
 
     public List<Idea> getFilteredIdeas(String status, String priority) {

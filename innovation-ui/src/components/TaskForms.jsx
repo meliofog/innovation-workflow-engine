@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../api/apiService';
+import { IdeaDetailsModal } from './IdeaDetailsModal'
+import { UserIcon, UserGroupIcon, DocumentTextIcon, PhotoIcon, FilmIcon, ArchiveBoxIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 // --- Document Management Component (Now uses processInstanceId) ---
 export const DocumentManager = ({ token, processInstanceId }) => {
@@ -223,10 +225,13 @@ export const PocConclusionForm = ({ task, token, onTaskCompleted }) => {
 };
 
 
-// --- NEW: Form for the MVP Presentation Task ---
-export const MvpPresentationForm = ({ task, token, onTaskCompleted }) => {
+// --- UPDATED: MVP Presentation Task Form with Embedded Recap ---
+export const MvpPresentationForm = ({ task, taskDetails, token, onTaskCompleted }) => {
     const [conclusion, setConclusion] = useState('ok');
     const [avisNegatif, setAvisNegatif] = useState('');
+
+    // The form no longer needs to fetch data or manage a loading state.
+    // It receives everything it needs via the `taskDetails` prop.
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -244,30 +249,59 @@ export const MvpPresentationForm = ({ task, token, onTaskCompleted }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h3 className="text-lg font-medium mb-4">MVP Presentation Outcome</h3>
-            <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Conclusion</label>
-                <select value={conclusion} onChange={(e) => setConclusion(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                    <option value="ok">OK (Favorable)</option>
-                    <option value="nok">NOK (Avis Négatif)</option>
-                </select>
+        <div className="space-y-6">
+            {/* --- The Recap Section --- */}
+            <div>
+                <h3 className="text-lg font-medium text-gray-800 border-b pb-2 mb-4">Project Recap</h3>
+                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
+                    <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Idea Title</dt>
+                        <dd className="mt-1 text-md text-gray-900">{taskDetails?.idea?.titre}</dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                        <dt className="text-sm font-medium text-gray-500">Description</dt>
+                        <dd className="mt-1 text-md text-gray-900">{taskDetails?.idea?.description}</dd>
+                    </div>
+                    {taskDetails?.developpement?.chefDeProjet && (
+                        <div>
+                            <dt className="text-sm font-medium text-gray-500 flex items-center"><UserIcon className="h-4 w-4 mr-1"/>Project Lead</dt>
+                            <dd className="mt-1 text-md text-gray-900">{taskDetails.developpement.chefDeProjet}</dd>
+                        </div>
+                    )}
+                    {taskDetails?.developpement?.membresEquipe && (
+                        <div className="sm:col-span-2">
+                            <dt className="text-sm font-medium text-gray-500 flex items-center"><UserGroupIcon className="h-4 w-4 mr-1"/>Team Members</dt>
+                            <dd className="mt-1 text-md text-gray-900">{taskDetails.developpement.membresEquipe.split(',').join(', ')}</dd>
+                        </div>
+                    )}
+                </dl>
             </div>
-            {conclusion === 'nok' && (
-                <div className="mb-6">
-                    <label htmlFor="avisNegatif" className="block text-sm font-medium text-gray-700">Negative Feedback Details</label>
-                    <textarea id="avisNegatif" value={avisNegatif} onChange={(e) => setAvisNegatif(e.target.value)} required rows="4" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"/>
+
+            {/* --- The Decision Form Section --- */}
+            <form onSubmit={handleSubmit} className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">MVP Presentation Outcome</h3>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Conclusion</label>
+                    <select value={conclusion} onChange={(e) => setConclusion(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="ok">OK (Favorable)</option>
+                        <option value="nok">NOK (Avis Négatif)</option>
+                    </select>
                 </div>
-            )}
-            <div className="flex justify-end">
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
-                    Submit Conclusion
-                </button>
-            </div>
-        </form>
+                {conclusion === 'nok' && (
+                    <div className="mb-6">
+                        <label htmlFor="avisNegatif" className="block text-sm font-medium text-gray-700">Negative Feedback Details</label>
+                        <textarea id="avisNegatif" value={avisNegatif} onChange={(e) => setAvisNegatif(e.target.value)} required rows="4" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"/>
+                    </div>
+                )}
+                <div className="flex justify-end">
+                    <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                        Submit Conclusion
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 };
-
 export const TeamCompositionForm = ({ task, token, onTaskCompleted }) => {
     const [allUsers, setAllUsers] = useState([]);
     const [chefDeProjet, setChefDeProjet] = useState('');

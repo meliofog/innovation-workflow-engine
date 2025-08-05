@@ -7,7 +7,7 @@ import {
     QualificationForm, 
     PocConclusionForm, 
     MvpPresentationForm, 
-    TeamCompositionForm, // <-- NEW
+    TeamCompositionForm,
     GenericTaskForm 
 } from './TaskForms';
 
@@ -44,7 +44,12 @@ export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
             case 'Activity_1oplie6': // Saisir la conclusion du POC
                 return <PocConclusionForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_0a8a9ls': // Présentation MVP aux clients pilotes
-                return <MvpPresentationForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
+                return <MvpPresentationForm 
+                            task={taskDetails.task} 
+                            taskDetails={taskDetails} // Pass the full details object
+                            token={token} 
+                            onTaskCompleted={onTaskCompleted} 
+                        />;
             case 'Activity_1cgibts': // Constitution de l'équipe
                 return <TeamCompositionForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_1npl4tr': // Travailler sur le business model et business plans définitifs
