@@ -47,6 +47,8 @@ export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
                 return <MvpPresentationForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_1cgibts': // Constitution de l'équipe
                 return <TeamCompositionForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
+            case 'Activity_1npl4tr': // Travailler sur le business model et business plans définitifs
+                return <BusinessPlanForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
 
             default:
                 return <GenericTaskForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
