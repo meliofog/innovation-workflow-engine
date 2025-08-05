@@ -25,8 +25,10 @@ public class IdeaController {
     private PocService pocService;
 
     @GetMapping
-    public ResponseEntity<List<Idea>> getIdeas() {
-        List<Idea> ideas = ideaService.getAllIdeas();
+    public ResponseEntity<List<Idea>> getIdeas(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority) {
+        List<Idea> ideas = ideaService.getFilteredIdeas(status, priority);
         return ResponseEntity.ok(ideas);
     }
 

@@ -16,4 +16,8 @@ public interface IdeaRepository extends JpaRepository<Idea, Long> {
 
     // NEW: Counts how many ideas have a specific priority
     long countByPriority(String priority);
+
+    List<Idea> findByStatut(String statut);
+    List<Idea> findByPriority(String priority);
+    List<Idea> findByStatutAndPriority(String statut, String priority);
 }

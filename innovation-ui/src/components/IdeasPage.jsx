@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../api/apiService';
-import { PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'; // EyeIcon is added
+import { PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
-export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onViewIdea prop is added
+// The component now accepts statusFilter and priorityFilter as props
+export const IdeasPage = ({ token, user, onEditIdea, onViewIdea, statusFilter, priorityFilter }) => {
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   const isEmetteur = user?.groups?.includes('EM');
 
+  // The local filter states have been removed from this component.
+
   const fetchIdeas = async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await apiService.getIdeas(token);
+      // The filters are now passed from the props
+      const data = await apiService.getIdeas(token, { status: statusFilter, priority: priorityFilter });
       setIdeas(data);
     } catch (err) {
       setError('Could not fetch ideas. Your session may have expired.');
@@ -23,12 +27,12 @@ export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onVie
     }
   };
 
+  // This hook now correctly re-fetches data whenever the filters from the parent component change.
   useEffect(() => {
     fetchIdeas();
-  }, [token]);
+  }, [token, statusFilter, priorityFilter]);
   
   const handleDelete = (ideaId) => {
-    // This creates a custom toast with confirmation buttons
     toast((t) => (
       <div className="flex flex-col items-center gap-4">
         <p className="font-semibold">Are you sure you want to delete this idea?</p>
@@ -42,7 +46,7 @@ export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onVie
                   success: 'Idea deleted successfully!',
                   error: 'Failed to delete idea.',
               });
-              toast.dismiss(t.id); // Close the confirmation toast
+              toast.dismiss(t.id);
             }}
           >
             Delete
@@ -55,23 +59,19 @@ export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onVie
           </button>
         </div>
       </div>
-    ), { duration: 6000 }); // The toast will stay for 6 seconds
+    ), { duration: 6000 });
   };
 
-  // Helper to determine priority color
   const getPriorityClass = (priority) => {
     switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-800';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'High': return 'bg-red-100 text-red-800';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800';
+      case 'Low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  // The JSX no longer contains the filter dropdowns, as they are now in AppLayout.
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-md">
       <ul role="list" className="divide-y divide-gray-200">
@@ -99,12 +99,9 @@ export const IdeasPage = ({ token, user, onEditIdea, onViewIdea }) => { // onVie
                 </div>
                 <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                   <div className="flex items-center space-x-4 ml-auto">
-                      {/* NEW VIEW BUTTON (Visible to all roles) */}
                       <button onClick={() => onViewIdea(idea.id)} className="text-gray-400 hover:text-blue-600" title="View Details">
                           <EyeIcon className="h-5 w-5" />
                       </button>
-                      
-                      {/* Emetteur-specific buttons */}
                       {isEmetteur && (
                           <>
                               <button onClick={() => onEditIdea(idea)} className="text-gray-400 hover:text-indigo-600" title="Edit Idea">

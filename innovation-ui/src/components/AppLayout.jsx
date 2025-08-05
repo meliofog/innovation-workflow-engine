@@ -3,25 +3,30 @@ import { IdeasPage } from './IdeasPage';
 import { MyTasksPage } from './MyTasksPage';
 import { IdeaModal } from './IdeaModal';
 import { DashboardPage } from './DashboardPage';
-import { IdeaDetailsModal } from './IdeaDetailsModal'; // Import the new details modal
+import { IdeaDetailsModal } from './IdeaDetailsModal';
 
 export const AppLayout = ({ token, user, onLogout }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [ideaToEdit, setIdeaToEdit] = useState(null);
-  const [viewingIdeaId, setViewingIdeaId] = useState(null); // State for the details modal
-  const [ideasKey, setIdeasKey] = useState(0); // Used to force a re-render of IdeasPage
+  const [viewingIdeaId, setViewingIdeaId] = useState(null);
+  const [ideasKey, setIdeasKey] = useState(0);
+
+  // --- NEW: State for all filters now lives in the main layout ---
+  const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [taskIdeaNameFilter, setTaskIdeaNameFilter] = useState('');
 
   const isEmetteur = user?.groups?.includes('EM');
 
   const handleSaveIdea = () => {
     setShowIdeaModal(false);
     setIdeaToEdit(null);
-    setIdeasKey(prevKey => prevKey + 1); // This will cause IdeasPage to re-fetch
+    setIdeasKey(prevKey => prevKey + 1);
   };
 
   const handleOpenNewIdeaModal = () => {
-    setIdeaToEdit(null); // Make sure we're in "create" mode
+    setIdeaToEdit(null);
     setShowIdeaModal(true);
   };
   
@@ -55,33 +60,72 @@ export const AppLayout = ({ token, user, onLogout }) => {
 
       <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {currentPage === 'dashboard' && <DashboardPage token={token} user={user} onNavigate={setCurrentPage} />}
           
-          {currentPage === 'ideas' && 
+          {/* --- NEW: Dynamic Header Section with Filters --- */}
+          <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Submitted Ideas</h2>
+              {currentPage === 'dashboard' && <h2 className="text-2xl font-semibold text-gray-900">Dashboard Overview</h2>}
+              {currentPage === 'ideas' && <h2 className="text-2xl font-semibold text-gray-900">Submitted Ideas</h2>}
+              {currentPage === 'tasks' && <h2 className="text-2xl font-semibold text-gray-900">Tasks</h2>}
+            </div>
+            
+            {/* Conditional Filters for Ideas Page */}
+            {currentPage === 'ideas' && (
+              <div className="flex items-center space-x-4">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                  <option value="">All Statuses</option>
+                  <option>EN_ATTENTE_PREQUALIFICATION</option>
+                  <option>EN_COURS_DE_QUALIFICATION</option>
+                  <option>POC_EN_COURS</option>
+                  <option>EN_DEVELOPPEMENT</option>
+                  <option>REALISEE</option>
+                  <option>REJETEE</option>
+                  <option>ARCHIVEE</option>
+                </select>
+                 <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                  <option value="">All Priorities</option>
+                  <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
+                </select>
                 {isEmetteur && (
-                  <button onClick={handleOpenNewIdeaModal} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                  <button onClick={handleOpenNewIdeaModal} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 whitespace-nowrap">
                     + Submit New Idea
                   </button>
                 )}
               </div>
-              <IdeasPage 
-                key={ideasKey} 
-                token={token} 
-                user={user} 
-                onEditIdea={handleOpenEditIdeaModal}
-                onViewIdea={setViewingIdeaId} // Pass the function to open the details modal
-              />
-            </div>
-          }
+            )}
 
-          {currentPage === 'tasks' && <MyTasksPage token={token} user={user} />}
+            {/* Conditional Filter for Tasks Page */}
+            {currentPage === 'tasks' && (
+               <input
+                  type="text"
+                  value={taskIdeaNameFilter}
+                  onChange={(e) => setTaskIdeaNameFilter(e.target.value)}
+                  className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  placeholder="Search by Idea Name..."
+                />
+            )}
+          </div>
+
+          {/* --- Page Content --- */}
+          {currentPage === 'dashboard' && <DashboardPage token={token} user={user} onNavigate={setCurrentPage} />}
+          {currentPage === 'ideas' && 
+            <IdeasPage 
+              key={ideasKey} 
+              token={token} 
+              user={user} 
+              onEditIdea={handleOpenEditIdeaModal}
+              onViewIdea={setViewingIdeaId}
+              // Pass the filters down as props
+              statusFilter={statusFilter}
+              priorityFilter={priorityFilter}
+            />
+          }
+          {currentPage === 'tasks' && <MyTasksPage token={token} user={user} ideaNameFilter={taskIdeaNameFilter} />}
         </div>
       </main>
       
-      {/* Modal for Creating/Editing an Idea */}
       {showIdeaModal && (
         <IdeaModal 
           token={token}
@@ -91,7 +135,6 @@ export const AppLayout = ({ token, user, onLogout }) => {
         />
       )}
 
-      {/* Modal for Viewing Idea Details */}
       {viewingIdeaId && (
         <IdeaDetailsModal
           token={token}

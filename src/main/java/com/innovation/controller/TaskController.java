@@ -15,10 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,7 +33,10 @@ public class TaskController {
 
     // THIS METHOD IS UPDATED to return rich details for each task
     @GetMapping
-    public ResponseEntity<?> getMyTasks(HttpServletRequest request) {
+    public ResponseEntity<?> getMyTasks(
+            @RequestParam(required = false) String ideaName,
+            HttpServletRequest request) {
+
         String username = (String) request.getAttribute("username");
         List<String> userGroups = (List<String>) request.getAttribute("userGroups");
 
@@ -44,21 +44,27 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
 
-        // Fetch all assigned and group tasks
+        // Explicitly fetch assigned tasks
         List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
+        // Explicitly fetch unassigned tasks for the user's groups
         List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
                 taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
 
-        List<Task> allTasks = new java.util.ArrayList<>();
+        List<Task> allTasks = new ArrayList<>();
         allTasks.addAll(assignedTasks);
         allTasks.addAll(groupTasks);
 
-        // For each task, fetch its associated idea and create our rich DTO
         List<TaskDetailsDto> detailedTasks = allTasks.stream().map(task -> {
             Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
-            Idea idea = ideaRepository.findById(ideaId).orElse(null); // Find the related idea
+            Idea idea = ideaId != null ? ideaRepository.findById(ideaId).orElse(null) : null;
             return new TaskDetailsDto(TaskDto.fromEntity(task), idea);
         }).collect(Collectors.toList());
+
+        if (ideaName != null && !ideaName.isEmpty()) {
+            detailedTasks = detailedTasks.stream()
+                    .filter(dto -> dto.getIdea() != null && dto.getIdea().getTitre().toLowerCase().contains(ideaName.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
 
         return ResponseEntity.ok(detailedTasks);
     }

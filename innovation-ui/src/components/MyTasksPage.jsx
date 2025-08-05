@@ -3,21 +3,23 @@ import { apiService } from '../api/apiService';
 import { TaskModal } from './TaskModal';
 import toast from 'react-hot-toast';
 
-
-export const MyTasksPage = ({ token, user }) => {
+// The component now receives ideaNameFilter as a prop
+export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
   const [assignedTasks, setAssignedTasks] = useState([]);
   const [groupTasks, setGroupTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
+  
+  // The local ideaNameFilter state has been removed.
 
   const fetchAllTasks = async () => {
     setLoading(true);
     setError('');
     try {
-      const allTasks = await apiService.getMyTasks(token);
-      
-      // Filter the tasks into two lists
+      // The filter value now comes directly from props
+      const allTasks = await apiService.getMyTasks(token, ideaNameFilter);
+
       const assigned = allTasks.filter(taskDetail => taskDetail.task.assignee !== null);
       const group = allTasks.filter(taskDetail => taskDetail.task.assignee === null);
       
@@ -31,11 +33,16 @@ export const MyTasksPage = ({ token, user }) => {
     }
   };
 
+  // The useEffect hook now correctly depends on the ideaNameFilter prop
   useEffect(() => {
-    if (user) {
-      fetchAllTasks();
-    }
-  }, [token, user]);
+    const delayDebounceFn = setTimeout(() => {
+      if (user) {
+        fetchAllTasks();
+      }
+    }, 500); // 500ms delay to avoid excessive API calls while typing
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [token, user, ideaNameFilter]);
 
   const handleClaim = async (taskId) => {
     const promise = apiService.claimTask(token, taskId);
@@ -65,29 +72,29 @@ export const MyTasksPage = ({ token, user }) => {
     setSelectedTask(null);
     fetchAllTasks();
     toast.success('Task completed!');
-};
+  };
 
+  // The JSX for rendering the component no longer includes the search bar,
+  // as it has been moved to the AppLayout component.
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">My Assigned Tasks</h2>
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul role="list" className="divide-y divide-gray-200">
-          {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
-          {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">You have no assigned tasks.</li>}
+            {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
+            {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">You have no assigned tasks.</li>}
             {assignedTasks.map((taskDetail) => (
               <li key={taskDetail.task.id}>
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                   <div>
-                    <p className="text-md font-medium text-indigo-600 truncate">{taskDetail.task.name}</p>
+                    <p className="text-md font-medium text-indigo-600 truncate">Idea: {taskDetail.idea?.titre || 'N/A'}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Related Idea: <span className="font-medium">{taskDetail.idea?.titre || 'N/A'}</span>
+                      Task: <span className="font-medium">{taskDetail.task.name}</span>
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(taskDetail.task.created).toLocaleString()}</p>
                   </div>
-                  {/* --- THIS SECTION IS UPDATED --- */}
                   <div className="flex items-center space-x-2">
-                    <button onClick={() => handleUnclaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-red-100 rounded-md hover:bg-gray-200">
+                    <button onClick={() => handleUnclaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-red-100 rounded-md hover:bg-red-200">
                       Unclaim
                     </button>
                     <button onClick={() => setSelectedTask(taskDetail.task)} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
@@ -111,12 +118,10 @@ export const MyTasksPage = ({ token, user }) => {
               <li key={taskDetail.task.id}>
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                   <div>
-                    <p className="text-md font-medium text-indigo-600 truncate">{taskDetail.task.name}</p>
-                    {/* --- THIS IS THE FIX --- */}
+                    <p className="text-md font-medium text-indigo-600 truncate">Idea: {taskDetail.idea?.titre || 'N/A'}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Related Idea: <span className="font-medium">{taskDetail.idea?.titre || 'N/A'}</span>
+                      Task: <span className="font-medium">{taskDetail.task.name}</span>
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(taskDetail.task.created).toLocaleString()}</p>
                   </div>
                   <button onClick={() => handleClaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                     Claim

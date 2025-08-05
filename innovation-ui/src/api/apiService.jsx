@@ -16,13 +16,19 @@ export const apiService = {
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
     },
-    getIdeas: async (token) => {
-      const response = await fetch('/api/ideas', {
+    // UPDATED getIdeas to accept filters
+    getIdeas: async (token, filters = {}) => {
+      const params = new URLSearchParams();
+      if (filters.status) params.append('status', filters.status);
+      if (filters.priority) params.append('priority', filters.priority);
+      
+      const response = await fetch(`/api/ideas?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Failed to fetch ideas');
       return response.json();
     },
+
     submitIdea: async (token, ideaData) => {
       const response = await fetch('/api/ideas', {
         method: 'POST',
@@ -35,8 +41,12 @@ export const apiService = {
       if (!response.ok) throw new Error('Failed to submit idea');
       return response.json();
     },
-    getMyTasks: async (token) => {
-      const response = await fetch('/api/tasks', {
+    // UPDATED getMyTasks to accept a filter
+    getMyTasks: async (token, ideaName = '') => {
+      const params = new URLSearchParams();
+      if (ideaName) params.append('ideaName', ideaName);
+
+      const response = await fetch(`/api/tasks?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Failed to fetch tasks');

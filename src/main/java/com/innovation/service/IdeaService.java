@@ -110,4 +110,19 @@ public class IdeaService {
         List<Document> documents = documentRepository.findByIdeaId(ideaId);
         return new IdeaDetailsDto(idea, documents);
     }
+
+    public List<Idea> getFilteredIdeas(String status, String priority) {
+        boolean hasStatus = status != null && !status.isEmpty();
+        boolean hasPriority = priority != null && !priority.isEmpty();
+
+        if (hasStatus && hasPriority) {
+            return ideaRepository.findByStatutAndPriority(status, priority);
+        } else if (hasStatus) {
+            return ideaRepository.findByStatut(status);
+        } else if (hasPriority) {
+            return ideaRepository.findByPriority(priority);
+        } else {
+            return ideaRepository.findAll();
+        }
+    }
 }
