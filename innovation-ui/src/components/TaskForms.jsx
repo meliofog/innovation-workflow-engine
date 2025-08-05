@@ -268,6 +268,88 @@ export const MvpPresentationForm = ({ task, token, onTaskCompleted }) => {
     );
 };
 
+export const TeamCompositionForm = ({ task, token, onTaskCompleted }) => {
+    const [allUsers, setAllUsers] = useState([]);
+    const [chefDeProjet, setChefDeProjet] = useState('');
+    const [membresEquipe, setMembresEquipe] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const users = await apiService.getAllUsers(token);
+                setAllUsers(users);
+            } catch (error) {
+                console.error("Failed to fetch users", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchUsers();
+    }, [token]);
+
+    const handleMemberSelect = (userId) => {
+        setMembresEquipe(prev => 
+            prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+        );
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // THIS LINE IS THE FIX: It now sends the processInstanceId, which is always available
+            await apiService.setDevelopmentTeam(token, task.processInstanceId, { chefDeProjet, membresEquipe });
+            await apiService.completeTask(token, task.id, {});
+            onTaskCompleted();
+        } catch (err) {
+            alert('Error setting team: ' + err.message);
+        }
+    };
+
+    if (isLoading) {
+        return <p>Loading users...</p>;
+    }
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <h3 className="text-lg font-medium mb-4">Team Composition</h3>
+            <div className="mb-4">
+                <label htmlFor="chefDeProjet" className="block text-sm font-medium text-gray-700">Project Lead (Chef de Projet)</label>
+                <select id="chefDeProjet" value={chefDeProjet} onChange={(e) => setChefDeProjet(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="" disabled>Select a project lead...</option>
+                    {allUsers.map(user => (
+                        <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.id})</option>
+                    ))}
+                </select>
+            </div>
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700">Team Members (Membres Equipe)</label>
+                <div className="mt-2 border rounded-md p-2 h-48 overflow-y-auto">
+                    {allUsers.map(user => (
+                        <div key={user.id} className="flex items-center">
+                            <input
+                                id={`user-${user.id}`}
+                                type="checkbox"
+                                checked={membresEquipe.includes(user.id)}
+                                onChange={() => handleMemberSelect(user.id)}
+                                className="h-4 w-4 rounded"
+                            />
+                            <label htmlFor={`user-${user.id}`} className="ml-3 text-sm text-gray-700">
+                                {user.firstName} {user.lastName} ({user.id})
+                            </label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <div className="flex justify-end">
+                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                    Set Team & Complete Task
+                </button>
+            </div>
+        </form>
+    );
+};
+
 export const GenericTaskForm = ({ task, token, onTaskCompleted }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();

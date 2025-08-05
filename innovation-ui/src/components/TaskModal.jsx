@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../api/apiService';
-import { DocumentManager, PrioritizationForm, QualificationForm, BusinessPlanForm, PocConclusionForm, MvpPresentationForm, GenericTaskForm } from './TaskForms'; // We will create this new file next
+
+import { 
+    BusinessPlanForm, 
+    PrioritizationForm, 
+    QualificationForm, 
+    PocConclusionForm, 
+    MvpPresentationForm, 
+    TeamCompositionForm, // <-- NEW
+    GenericTaskForm 
+} from './TaskForms';
 
 export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
     const [taskDetails, setTaskDetails] = useState(null);
@@ -23,7 +32,7 @@ export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
     }, [task, token]);
 
     const renderTaskForm = () => {
-        if (!taskDetails) return null; // Don't render a form until we have the details
+        if (!taskDetails) return null;
 
         switch (taskDetails.task.taskDefinitionKey) {
             case 'Activity_10rvc7h': // Priorisation / Filtrage
@@ -36,6 +45,9 @@ export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
                 return <PocConclusionForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_0a8a9ls': // Présentation MVP aux clients pilotes
                 return <MvpPresentationForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
+            case 'Activity_1cgibts': // Constitution de l'équipe
+                return <TeamCompositionForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
+
             default:
                 return <GenericTaskForm task={taskDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
         }
@@ -53,13 +65,11 @@ export const TaskModal = ({ task, token, onClose, onTaskCompleted }) => {
                     <p>Loading task details...</p>
                 ) : (
                     <div className="space-y-6">
-                        {/* --- NEW: Idea Context Section --- */}
                         <div className="p-4 border rounded-lg bg-gray-50">
                             <h3 className="text-lg font-semibold text-gray-700 mb-2">Related Idea: {taskDetails?.idea?.titre}</h3>
                             <p className="text-sm text-gray-600">{taskDetails?.idea?.description}</p>
                         </div>
                         
-                        {/* The task-specific form */}
                         <div className="border-t pt-4">
                             {renderTaskForm()}
                         </div>

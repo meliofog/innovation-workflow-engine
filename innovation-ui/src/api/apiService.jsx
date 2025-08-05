@@ -158,4 +158,25 @@ export const apiService = {
       if (!response.ok) throw new Error('Failed to fetch task details');
       return response.json();
     },
+      // NEW: Get a list of all users for assignment
+    getAllUsers: async (token) => {
+      const response = await fetch('/api/developpements/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    },
+
+    // NEW: Set the team for a development record
+    setDevelopmentTeam: async (token, processInstanceId, teamData) => {
+      const response = await fetch(`/api/developpements/process-instances/${processInstanceId}/equipe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(teamData),
+      });
+      if (!response.ok) throw new Error('Failed to set team');
+    },
   };
