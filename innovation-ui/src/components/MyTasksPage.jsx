@@ -3,23 +3,24 @@ import { apiService } from '../api/apiService';
 import { TaskModal } from './TaskModal';
 import toast from 'react-hot-toast';
 
-// The component now receives ideaNameFilter as a prop
 export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
   const [assignedTasks, setAssignedTasks] = useState([]);
   const [groupTasks, setGroupTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
-  
-  // The local ideaNameFilter state has been removed.
+   // This will now hold the full task detail object
+   const [selectedTaskDetail, setSelectedTaskDetail] = useState(null); 
+
 
   const fetchAllTasks = async () => {
     setLoading(true);
     setError('');
     try {
-      // The filter value now comes directly from props
+      // 1. Call the single, unified endpoint
       const allTasks = await apiService.getMyTasks(token, ideaNameFilter);
 
+      // 2. Filter the results into two separate lists for the UI
       const assigned = allTasks.filter(taskDetail => taskDetail.task.assignee !== null);
       const group = allTasks.filter(taskDetail => taskDetail.task.assignee === null);
       
@@ -33,13 +34,12 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
     }
   };
 
-  // The useEffect hook now correctly depends on the ideaNameFilter prop
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (user) {
         fetchAllTasks();
       }
-    }, 500); // 500ms delay to avoid excessive API calls while typing
+    }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [token, user, ideaNameFilter]);
@@ -49,7 +49,7 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
     toast.promise(promise, {
       loading: 'Claiming task...',
       success: () => {
-        fetchAllTasks(); // Refresh list on success
+        fetchAllTasks();
         return 'Task claimed successfully!';
       },
       error: 'Failed to claim task.',
@@ -61,7 +61,7 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
     toast.promise(promise, {
       loading: 'Unclaiming task...',
       success: () => {
-        fetchAllTasks(); // Refresh both lists on success
+        fetchAllTasks();
         return 'Task returned to group queue!';
       },
       error: 'Failed to unclaim task.',
@@ -69,21 +69,20 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
   };
 
   const handleTaskCompleted = () => {
-    setSelectedTask(null);
+    setSelectedTaskDetail(null); // Close the modal
     fetchAllTasks();
     toast.success('Task completed!');
-  };
+};
 
-  // The JSX for rendering the component no longer includes the search bar,
-  // as it has been moved to the AppLayout component.
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">My Assigned Tasks</h2>
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul role="list" className="divide-y divide-gray-200">
-            {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
-            {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">You have no assigned tasks.</li>}
+          {loading && <li className="px-4 py-4 text-center text-gray-500">Loading...</li>}
+          {!loading && assignedTasks.length === 0 && <li className="px-4 py-4 text-center text-gray-500">No assigned tasks.</li>}
             {assignedTasks.map((taskDetail) => (
               <li key={taskDetail.task.id}>
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
@@ -97,7 +96,9 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
                     <button onClick={() => handleUnclaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-red-100 rounded-md hover:bg-red-200">
                       Unclaim
                     </button>
-                    <button onClick={() => setSelectedTask(taskDetail.task)} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                    {/* --- THIS IS THE FIX --- */}
+                    {/* We now pass the entire taskDetail object to the modal */}
+                    <button onClick={() => setSelectedTaskDetail(taskDetail)} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
                       Work on Task
                     </button>
                   </div>
@@ -107,6 +108,7 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
           </ul>
         </div>
       </div>
+
 
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Available Group Tasks</h2>
@@ -122,6 +124,7 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
                     <p className="text-sm text-gray-500 mt-1">
                       Task: <span className="font-medium">{taskDetail.task.name}</span>
                     </p>
+                    <p className="text-sm text-gray-500 mt-1">Created: {new Date(taskDetail.task.created).toLocaleString()}</p>
                   </div>
                   <button onClick={() => handleClaim(taskDetail.task.id)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                     Claim
@@ -135,11 +138,11 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
 
       {error && <p className="mt-4 text-center text-red-600">{error}</p>}
       
-      {selectedTask && (
+      {selectedTaskDetail && (
           <TaskModal 
-              task={selectedTask} 
+              details={selectedTaskDetail} 
               token={token} 
-              onClose={() => setSelectedTask(null)} 
+              onClose={() => setSelectedTaskDetail(null)} 
               onTaskCompleted={handleTaskCompleted} 
           />
       )}

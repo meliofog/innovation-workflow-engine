@@ -225,20 +225,15 @@ export const PocConclusionForm = ({ task, token, onTaskCompleted }) => {
 };
 
 
-// --- UPDATED: MVP Presentation Task Form with Embedded Recap ---
-export const MvpPresentationForm = ({ task, taskDetails, token, onTaskCompleted }) => {
+// --- UPDATED: MVP Presentation Task Form with Clean Rich Recap ---
+export const MvpPresentationForm = ({ task, details, token, onTaskCompleted }) => {
     const [conclusion, setConclusion] = useState('ok');
     const [avisNegatif, setAvisNegatif] = useState('');
-
-    // The form no longer needs to fetch data or manage a loading state.
-    // It receives everything it needs via the `taskDetails` prop.
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const variables = { conclusion };
-        if (conclusion === 'nok') {
-            variables.avisNegatif = avisNegatif;
-        }
+        if (conclusion === 'nok') variables.avisNegatif = avisNegatif;
         
         try {
             await apiService.completeTask(token, task.id, variables);
@@ -248,38 +243,127 @@ export const MvpPresentationForm = ({ task, taskDetails, token, onTaskCompleted 
         }
     };
 
+    const idea = details?.idea;
+    const poc = details?.poc;
+    const developpement = details?.developpement;
+    const documents = details?.documents || [];
+
+    // Helper function for document preview (same as IdeaDetailsModal)
+    const getFileIcon = (fileType) => {
+        if (fileType.startsWith('video/')) return <FilmIcon className="h-10 w-10 text-gray-400" />;
+        if (fileType === 'application/pdf') return <DocumentTextIcon className="h-10 w-10 text-red-400" />;
+        return <ArchiveBoxIcon className="h-10 w-10 text-gray-400" />;
+    };
+
     return (
-        <div className="space-y-6">
-            {/* --- The Recap Section --- */}
+        <div className="space-y-8">
+            {/* --- Clean Project Recap Section --- */}
             <div>
-                <h3 className="text-lg font-medium text-gray-800 border-b pb-2 mb-4">Project Recap</h3>
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
-                    <div className="sm:col-span-1">
-                        <dt className="text-sm font-medium text-gray-500">Idea Title</dt>
-                        <dd className="mt-1 text-md text-gray-900">{taskDetails?.idea?.titre}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                        <dt className="text-sm font-medium text-gray-500">Description</dt>
-                        <dd className="mt-1 text-md text-gray-900">{taskDetails?.idea?.description}</dd>
-                    </div>
-                    {taskDetails?.developpement?.chefDeProjet && (
+                <h3 className="text-lg font-medium text-gray-800 mb-6">Project Recap</h3>
+                
+                {/* Main Idea Details */}
+                <div className="mb-8">
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-3">
                         <div>
-                            <dt className="text-sm font-medium text-gray-500 flex items-center"><UserIcon className="h-4 w-4 mr-1"/>Project Lead</dt>
-                            <dd className="mt-1 text-md text-gray-900">{taskDetails.developpement.chefDeProjet}</dd>
+                            <dt className="text-sm font-medium text-gray-500">Status</dt>
+                            <dd className="mt-1 text-md text-gray-900">{idea?.statut}</dd>
                         </div>
-                    )}
-                    {taskDetails?.developpement?.membresEquipe && (
-                        <div className="sm:col-span-2">
-                            <dt className="text-sm font-medium text-gray-500 flex items-center"><UserGroupIcon className="h-4 w-4 mr-1"/>Team Members</dt>
-                            <dd className="mt-1 text-md text-gray-900">{taskDetails.developpement.membresEquipe.split(',').join(', ')}</dd>
+                        <div>
+                            <dt className="text-sm font-medium text-gray-500">Priority</dt>
+                            <dd className="mt-1 text-md text-gray-900">{idea?.priority || 'Not set'}</dd>
                         </div>
-                    )}
-                </dl>
+                        {idea?.motifRejet && (
+                            <div className="sm:col-span-3">
+                                <dt className="text-sm font-medium text-red-600">Rejection Reason</dt>
+                                <dd className="mt-1 text-md text-gray-900">{idea.motifRejet}</dd>
+                            </div>
+                        )}
+                    </dl>
+                </div>
+
+                {/* POC Section (if available) */}
+                {poc && (
+                    <div className="mb-8">
+                        <h4 className="text-md font-semibold text-gray-700 mb-4">POC Details</h4>
+                        <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                            <div className="sm:col-span-2">
+                                <dt className="text-sm font-medium text-gray-500">Conclusion</dt>
+                                <dd className="mt-1 text-md text-gray-900">{poc.conclusion || 'N/A'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-medium text-gray-500">Decision</dt>
+                                <dd className="mt-1 text-md text-gray-900 capitalize">{poc.decision}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                )}
+
+                {/* Development Section (if available) */}
+                {developpement && (
+                    <div className="mb-8">
+                        <h4 className="text-md font-semibold text-gray-700 mb-4">Development Details</h4>
+                        <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                            <div>
+                                <dt className="text-sm font-medium text-gray-500 flex items-center"><UserIcon className="h-4 w-4 mr-1"/>Project Lead</dt>
+                                <dd className="mt-1 text-md text-gray-900">{developpement.chefDeProjet}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-medium text-gray-500 flex items-center"><UserGroupIcon className="h-4 w-4 mr-1"/>Team Members</dt>
+                                <dd className="mt-1 text-md text-gray-900">{developpement.membresEquipe?.split(',').join(', ')}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                )}
+
+                {/* Documents Section */}
+                <div>
+                    <h4 className="text-md font-semibold text-gray-700 mb-4">Attached Documents</h4>
+                    <div className="mt-2">
+                        {documents.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {documents.map(doc => {
+                                    const isImage = doc.fileType.startsWith('image/');
+                                    const downloadUrl = `/api/documents/${doc.id}/download`;
+                                    
+                                    return (
+                                        <a 
+                                            key={doc.id}
+                                            href={downloadUrl} 
+                                            download 
+                                            className="relative group block w-full h-24 bg-gray-100 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                            title={`Download ${doc.fileName.substring(doc.fileName.indexOf('_') + 1)}`}
+                                        >
+                                            {isImage ? (
+                                                <img 
+                                                    src={downloadUrl} 
+                                                    alt={doc.fileName} 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    {getFileIcon(doc.fileType)}
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                                <div className="text-center text-white p-1">
+                                                    <ArrowDownTrayIcon className="h-6 w-6 mx-auto mb-1" />
+                                                    <span className="text-xs break-all">{doc.fileName.substring(doc.fileName.indexOf('_') + 1)}</span>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-8">No documents attached.</p>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* --- The Decision Form Section --- */}
-            <form onSubmit={handleSubmit} className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">MVP Presentation Outcome</h3>
+            <form onSubmit={handleSubmit} className="border-t pt-8">
+                <h3 className="text-lg font-medium mb-6">MVP Presentation Outcome</h3>
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700">Conclusion</label>
                     <select value={conclusion} onChange={(e) => setConclusion(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
@@ -302,6 +386,7 @@ export const MvpPresentationForm = ({ task, taskDetails, token, onTaskCompleted 
         </div>
     );
 };
+
 export const TeamCompositionForm = ({ task, token, onTaskCompleted }) => {
     const [allUsers, setAllUsers] = useState([]);
     const [chefDeProjet, setChefDeProjet] = useState('');

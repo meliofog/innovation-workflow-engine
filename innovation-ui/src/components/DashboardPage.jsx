@@ -36,7 +36,6 @@ export const DashboardPage = ({ token, user, onNavigate }) => {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h2>
         {error && <p className="text-red-500">{error}</p>}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Total Submitted Ideas" value={stats.totalIdeas} isLoading={loading} />
