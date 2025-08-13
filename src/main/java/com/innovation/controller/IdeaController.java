@@ -21,6 +21,12 @@ public class IdeaController {
 
     // We no longer need PocService here, as IdeaService handles everything.
 
+    // Helper method for authorization checks
+    private boolean isEmetteurOrAdmin(HttpServletRequest request) {
+        List<String> userGroups = (List<String>) request.getAttribute("userGroups");
+        return userGroups != null && (userGroups.contains("EM") || userGroups.contains("camunda-admin"));
+    }
+
     @GetMapping
     public ResponseEntity<List<Idea>> getIdeas(
             @RequestParam(required = false) String status,
@@ -38,9 +44,8 @@ public class IdeaController {
 
     @PostMapping
     public ResponseEntity<?> submitIdea(@RequestBody Idea idea, HttpServletRequest request) {
-        List<String> userGroups = (List<String>) request.getAttribute("userGroups");
-        if (userGroups == null || !userGroups.contains("EM")) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur users can submit ideas.");
+        if (!isEmetteurOrAdmin(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur or Admin users can submit ideas.");
         }
         Idea createdIdea = ideaService.createIdea(idea);
         return ResponseEntity.ok(createdIdea);
@@ -48,9 +53,8 @@ public class IdeaController {
 
     @PutMapping("/{ideaId}")
     public ResponseEntity<?> updateIdea(@PathVariable Long ideaId, @RequestBody Idea ideaDetails, HttpServletRequest request) {
-        List<String> userGroups = (List<String>) request.getAttribute("userGroups");
-        if (userGroups == null || !userGroups.contains("EM")) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur users can update ideas.");
+        if (!isEmetteurOrAdmin(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur or Admin users can update ideas.");
         }
         Idea updatedIdea = ideaService.updateIdea(ideaId, ideaDetails);
         return ResponseEntity.ok(updatedIdea);
@@ -58,9 +62,8 @@ public class IdeaController {
 
     @DeleteMapping("/{ideaId}")
     public ResponseEntity<?> deleteIdea(@PathVariable Long ideaId, HttpServletRequest request) {
-        List<String> userGroups = (List<String>) request.getAttribute("userGroups");
-        if (userGroups == null || !userGroups.contains("EM")) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur users can delete ideas.");
+        if (!isEmetteurOrAdmin(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur or Admin users can delete ideas.");
         }
         ideaService.deleteIdea(ideaId);
         return ResponseEntity.ok().body("Idea deleted successfully.");

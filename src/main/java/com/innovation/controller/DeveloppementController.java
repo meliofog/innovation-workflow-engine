@@ -27,7 +27,8 @@ public class DeveloppementController {
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = identityService.createUserQuery().list();
+        // This now queries only for users who are members of the "DEV" group.
+        List<User> users = identityService.createUserQuery().memberOfGroup("DEV").list();
         return ResponseEntity.ok(users);
     }
 

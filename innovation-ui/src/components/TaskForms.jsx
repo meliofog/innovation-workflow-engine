@@ -396,7 +396,7 @@ export const TeamCompositionForm = ({ task, token, onTaskCompleted }) => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const users = await apiService.getAllUsers(token);
+                const users = await apiService.getAllUsersForTask(token);
                 setAllUsers(users);
             } catch (error) {
                 console.error("Failed to fetch users", error);

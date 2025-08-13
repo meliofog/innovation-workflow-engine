@@ -15,23 +15,26 @@ public class UserDataGenerator implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Create Groups if they don't exist
+        // Create Groups
         createGroup("CSI", "Comité scientifique d’innovation");
         createGroup("CQ", "Commission de qualification");
         createGroup("DEV", "Equipe technique");
         createGroup("EM", "Emetteur");
+        createGroup("camunda-admin", "Camunda Administrators"); // Camunda's admin group
 
-        // Create Users if they don't exist
+        // Create Users
         createUser("emetteurUser", "Emetteur", "User", "password", "emetteur@demo.com");
         createUser("cqUser", "Commission", "Qualification", "password", "cq@demo.com");
         createUser("csiUser", "Comite", "Scientifique", "password", "csi@demo.com");
-        createUser("devUser", "Developer", "User", "password", "dev@demo.com"); // <-- ADD THIS LINE
+        createUser("devUser", "Developer", "User", "password", "dev@demo.com");
+        createUser("admin", "Admin", "User", "password", "admin@demo.com"); // New Admin User
 
-        // Create Memberships with the new user IDs
+        // Create Memberships
         createMembership("cqUser", "CQ");
         createMembership("csiUser", "CSI");
         createMembership("emetteurUser", "EM");
-        createMembership("devUser", "DEV"); // <-- ADD THIS LINE
+        createMembership("devUser", "DEV");
+        createMembership("admin", "camunda-admin"); // Add admin to the admin group
     }
 
     private void createGroup(String groupId, String groupName) {

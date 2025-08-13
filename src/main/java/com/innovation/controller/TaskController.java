@@ -44,16 +44,23 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
 
-        // Explicitly fetch assigned tasks
-        List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
-        // Explicitly fetch unassigned tasks for the user's groups
-        List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
-                taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
-
         List<Task> allTasks = new ArrayList<>();
-        allTasks.addAll(assignedTasks);
-        allTasks.addAll(groupTasks);
 
+        // --- THIS IS THE NEW LOGIC ---
+        // If the user is an admin, fetch ALL active tasks in the system.
+        if (userGroups != null && userGroups.contains("camunda-admin")) {
+            allTasks = taskService.createTaskQuery().active().list();
+        } else {
+            // Otherwise, use your robust logic to get assigned and group tasks.
+            List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
+            List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
+                    taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
+
+            allTasks.addAll(assignedTasks);
+            allTasks.addAll(groupTasks);
+        }
+
+        // The rest of your logic remains the same.
         List<TaskDetailsDto> detailedTasks = allTasks.stream().map(task -> {
             Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
             Idea idea = ideaId != null ? ideaRepository.findById(ideaId).orElse(null) : null;

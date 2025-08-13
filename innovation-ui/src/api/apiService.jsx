@@ -146,7 +146,8 @@ export const apiService = {
     if (!response.ok) throw new Error('Failed to fetch task details');
     return response.json();
   },
-  getAllUsers: async (token) => {
+  // --- Team Composition (for the specific task) ---
+  getAllUsersForTask: async (token) => {
     const response = await fetch('/api/developpements/users', {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -163,5 +164,73 @@ export const apiService = {
       body: JSON.stringify(teamData),
     });
     if (!response.ok) throw new Error('Failed to set team');
+  },
+   // --- User Management (for Admin Page) ---
+   getAllUsersForAdmin: async (token) => {
+    const response = await fetch('/api/users', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  },
+  getAllGroups: async (token) => {
+    const response = await fetch('/api/users/groups', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to fetch groups');
+    return response.json();
+  },
+  // NEW: Get the groups for a specific user
+  getUserGroups: async (token, userId) => {
+    const response = await fetch(`/api/users/${userId}/groups`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Failed to fetch user's groups");
+    return response.json();
+  },
+  createUser: async (token, userData) => {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error('Failed to create user');
+    return response.json();
+  },
+
+  updateUser: async (token, userId, userData) => {
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error('Failed to update user');
+    return response.json();
+  },
+
+  deleteUser: async (token, userId) => {
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to delete user');
+  },
+
+  updateUserGroups: async (token, userId, groupIds) => {
+    const response = await fetch(`/api/users/${userId}/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(groupIds),
+    });
+    if (!response.ok) throw new Error("Failed to update user's groups");
   },
 };

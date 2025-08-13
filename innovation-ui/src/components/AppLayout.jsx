@@ -4,6 +4,7 @@ import { MyTasksPage } from './MyTasksPage';
 import { IdeaModal } from './IdeaModal';
 import { DashboardPage } from './DashboardPage';
 import { IdeaDetailsModal } from './IdeaDetailsModal';
+import { UserManagementPage } from './UserManagementPage';
 
 export const AppLayout = ({ token, user, onLogout }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -11,13 +12,12 @@ export const AppLayout = ({ token, user, onLogout }) => {
   const [ideaToEdit, setIdeaToEdit] = useState(null);
   const [viewingIdeaId, setViewingIdeaId] = useState(null);
   const [ideasKey, setIdeasKey] = useState(0);
-
-  // --- NEW: State for all filters now lives in the main layout ---
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [taskIdeaNameFilter, setTaskIdeaNameFilter] = useState('');
 
   const isEmetteur = user?.groups?.includes('EM');
+  const isAdmin = user?.groups?.includes('camunda-admin');
 
   const handleSaveIdea = () => {
     setShowIdeaModal(false);
@@ -46,6 +46,9 @@ export const AppLayout = ({ token, user, onLogout }) => {
                   <button onClick={() => setCurrentPage('dashboard')} className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === 'dashboard' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}>Dashboard</button>
                   <button onClick={() => setCurrentPage('ideas')} className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === 'ideas' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}>Ideas</button>
                   <button onClick={() => setCurrentPage('tasks')} className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === 'tasks' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}>Tasks</button>
+                  {isAdmin && (
+                    <button onClick={() => setCurrentPage('users')} className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === 'users' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'}`}>Users</button>
+                  )}
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -60,16 +63,14 @@ export const AppLayout = ({ token, user, onLogout }) => {
 
       <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          {/* --- NEW: Dynamic Header Section with Filters --- */}
           <div className="flex justify-between items-center mb-6">
             <div>
               {currentPage === 'dashboard' && <h2 className="text-2xl font-semibold text-gray-900">Dashboard Overview</h2>}
               {currentPage === 'ideas' && <h2 className="text-2xl font-semibold text-gray-900">Submitted Ideas</h2>}
               {currentPage === 'tasks' && <h2 className="text-2xl font-semibold text-gray-900">Tasks</h2>}
+              {currentPage === 'users' && <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>}
             </div>
             
-            {/* Conditional Filters for Ideas Page */}
             {currentPage === 'ideas' && (
               <div className="flex items-center space-x-4">
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
@@ -88,7 +89,9 @@ export const AppLayout = ({ token, user, onLogout }) => {
                   <option>Medium</option>
                   <option>Low</option>
                 </select>
-                {isEmetteur && (
+                {/* --- THIS IS THE FIX --- */}
+                {/* Show the button if the user is an Emetteur OR an Admin */}
+                {(isEmetteur || isAdmin) && (
                   <button onClick={handleOpenNewIdeaModal} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 whitespace-nowrap">
                     + Submit New Idea
                   </button>
@@ -96,7 +99,6 @@ export const AppLayout = ({ token, user, onLogout }) => {
               </div>
             )}
 
-            {/* Conditional Filter for Tasks Page */}
             {currentPage === 'tasks' && (
                <input
                   type="text"
@@ -108,7 +110,6 @@ export const AppLayout = ({ token, user, onLogout }) => {
             )}
           </div>
 
-          {/* --- Page Content --- */}
           {currentPage === 'dashboard' && <DashboardPage token={token} user={user} onNavigate={setCurrentPage} />}
           {currentPage === 'ideas' && 
             <IdeasPage 
@@ -117,12 +118,12 @@ export const AppLayout = ({ token, user, onLogout }) => {
               user={user} 
               onEditIdea={handleOpenEditIdeaModal}
               onViewIdea={setViewingIdeaId}
-              // Pass the filters down as props
               statusFilter={statusFilter}
               priorityFilter={priorityFilter}
             />
           }
           {currentPage === 'tasks' && <MyTasksPage token={token} user={user} ideaNameFilter={taskIdeaNameFilter} />}
+          {currentPage === 'users' && isAdmin && <UserManagementPage token={token} />}
         </div>
       </main>
       
