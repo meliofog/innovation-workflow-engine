@@ -40,10 +40,12 @@ export const apiService = {
     return response.json();
   },
   // This is the single, correct method for fetching all of a user's tasks
-  getMyTasks: async (token, ideaName = '') => {
+  getMyTasks: async (token, filters = {}) => {
     const params = new URLSearchParams();
-    if (ideaName) params.append('ideaName', ideaName);
-
+    if (filters.ideaName) params.append('ideaName', filters.ideaName);
+    // Add the new filter parameter
+    if (filters.taskDefinitionKey) params.append('taskDefinitionKey', filters.taskDefinitionKey);
+    
     const response = await fetch(`/api/tasks?${params.toString()}`, { 
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -105,6 +107,13 @@ export const apiService = {
     });
     if (!response.ok) throw new Error('Failed to upload document');
     return response.text();
+  },
+  deleteDocument: async (token, documentId) => {
+    const response = await fetch(`/api/documents/${documentId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to delete document');
   },
   getDashboardStats: async (token) => {
     const response = await fetch('/api/dashboard/stats', {

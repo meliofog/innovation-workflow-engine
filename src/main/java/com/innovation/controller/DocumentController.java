@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.NoSuchFileException; // <-- Add this import
 import java.time.LocalDateTime;
 import java.util.Collections; // <-- Add this import
 import java.util.List;
@@ -34,7 +35,7 @@ public class DocumentController {
     private IdeaRepository ideaRepository;
 
     @Autowired
-    private RuntimeService runtimeService; // <-- Inject RuntimeService
+    private RuntimeService runtimeService;
 
     // This is the NEW endpoint for uploading
     @PostMapping("/process-instances/{processInstanceId}/documents")
@@ -94,5 +95,19 @@ public class DocumentController {
         } catch (Exception e) {
             throw new RuntimeException("File not found: " + document.getFileName(), e);
         }
+    }
+    @DeleteMapping("/documents/{documentId}")
+    public ResponseEntity<?> deleteDocument(@PathVariable Long documentId) {
+        // Find the document record in the database
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new RuntimeException("Document not found with id: " + documentId));
+
+        // Delete the physical file from the server
+        fileStorageService.deleteFile(document.getFileName());
+
+        // Delete the record from the database
+        documentRepository.delete(document);
+
+        return ResponseEntity.ok().body("Document deleted successfully.");
     }
 }

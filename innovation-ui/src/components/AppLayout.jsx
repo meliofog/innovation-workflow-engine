@@ -15,6 +15,7 @@ export const AppLayout = ({ token, user, onLogout }) => {
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [taskIdeaNameFilter, setTaskIdeaNameFilter] = useState('');
+  const [taskTypeFilter, setTaskTypeFilter] = useState('');
 
   const isEmetteur = user?.groups?.includes('EM');
   const isAdmin = user?.groups?.includes('camunda-admin');
@@ -100,13 +101,31 @@ export const AppLayout = ({ token, user, onLogout }) => {
             )}
 
             {currentPage === 'tasks' && (
-               <input
-                  type="text"
-                  value={taskIdeaNameFilter}
-                  onChange={(e) => setTaskIdeaNameFilter(e.target.value)}
-                  className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  placeholder="Search by Idea Name..."
-                />
+               <div className="flex items-center space-x-4">
+                  {/* --- NEW: Task Type Filter Dropdown --- */}
+                  <select
+                    value={taskTypeFilter}
+                    onChange={(e) => setTaskTypeFilter(e.target.value)}
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"
+                  >
+                    <option value="">All Task Types</option>
+                    <option value="Activity_10rvc7h">Priorisation / Filtrage</option>
+                    <option value="Activity_0tg41vr">Qualifier l'idée</option>
+                    <option value="Activity_1oplie6">Saisir conclusion POC</option>
+                    <option value="Activity_1cgibts">Constitution de l'équipe</option>
+                    <option value="Activity_1npl4tr">Travailler sur le business model</option>
+                    <option value="Activity_0a8a9ls">Présentation MVP</option>
+                    <option value="Activity_0ajhb6g">Traiter les idées ajournées</option>
+                    <option value="Activity_0bqn3dl">Elaboration Business plan</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={taskIdeaNameFilter}
+                    onChange={(e) => setTaskIdeaNameFilter(e.target.value)}
+                    className="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="Search by Idea Name..."
+                  />
+               </div>
             )}
           </div>
 
@@ -122,7 +141,8 @@ export const AppLayout = ({ token, user, onLogout }) => {
               priorityFilter={priorityFilter}
             />
           }
-          {currentPage === 'tasks' && <MyTasksPage token={token} user={user} ideaNameFilter={taskIdeaNameFilter} />}
+          {/* Pass the new filter down to the MyTasksPage component */}
+          {currentPage === 'tasks' && <MyTasksPage token={token} user={user} ideaNameFilter={taskIdeaNameFilter} taskTypeFilter={taskTypeFilter} />}
           {currentPage === 'users' && isAdmin && <UserManagementPage token={token} />}
         </div>
       </main>

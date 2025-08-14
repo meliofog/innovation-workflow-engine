@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../api/apiService';
 import { IdeaDetailsModal } from './IdeaDetailsModal'
-import { UserIcon, UserGroupIcon, DocumentTextIcon, PhotoIcon, FilmIcon, ArchiveBoxIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import { UserIcon, UserGroupIcon, DocumentTextIcon, PhotoIcon, FilmIcon, ArchiveBoxIcon, ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // --- Document Management Component (Now uses processInstanceId) ---
 export const DocumentManager = ({ token, processInstanceId }) => {
@@ -39,6 +40,17 @@ export const DocumentManager = ({ token, processInstanceId }) => {
         }
     };
 
+    const handleDelete = async (documentId) => {
+        if (window.confirm("Are you sure you want to delete this file?")) {
+            const promise = apiService.deleteDocument(token, documentId).then(() => fetchDocuments());
+            toast.promise(promise, {
+                loading: 'Deleting file...',
+                success: 'File deleted successfully!',
+                error: 'Failed to delete file.',
+            });
+        }
+    };
+
     return (
         <div>
             <h4 className="text-md font-semibold mb-2">Attached Documents</h4>
@@ -48,7 +60,18 @@ export const DocumentManager = ({ token, processInstanceId }) => {
                         {documents.length > 0 ? documents.map(doc => (
                             <li key={doc.id} className="flex justify-between items-center text-sm">
                                 <span>{doc.fileName.substring(doc.fileName.indexOf('_') + 1)}</span>
-                                <a href={`/api/documents/${doc.id}/download`} download className="text-indigo-600 hover:underline">Download</a>
+                                <div className="flex items-center space-x-3">
+                                    <a href={`/api/documents/${doc.id}/download`} download className="text-indigo-600 hover:underline">Download</a>
+                                    {/* --- THIS IS THE NEW BUTTON --- */}
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handleDelete(doc.id)} 
+                                        className="text-gray-400 hover:text-red-600"
+                                        title="Delete File"
+                                    >
+                                        <TrashIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </li>
                         )) : <p className="text-gray-500">No documents attached.</p>}
                     </ul>
@@ -463,6 +486,43 @@ export const TeamCompositionForm = ({ task, token, onTaskCompleted }) => {
             <div className="flex justify-end">
                 <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
                     Set Team & Complete Task
+                </button>
+            </div>
+        </form>
+    );
+};
+
+export const BusinessPlanValidationForm = ({ task, token, onTaskCompleted }) => {
+    
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        // We can pass a variable to the process indicating approval
+        const variables = { businessPlanValidated: true };
+        
+        try {
+            await apiService.completeTask(token, task.id, variables);
+            onTaskCompleted();
+        } catch (err) {
+            alert('Error completing task: ' + err.message);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <h3 className="text-lg font-medium mb-4">Validate Final Business Plan</h3>
+            <p className="text-sm text-gray-600 mb-4">Please review the attached documents below. Once you have verified them, click the button to validate and approve the business plan.</p>
+            
+            {/* We reuse the DocumentManager to show the files */}
+            <div className="mb-6">
+                <DocumentManager 
+                    token={token} 
+                    processInstanceId={task.processInstanceId} 
+                />
+            </div>
+
+            <div className="flex justify-end">
+                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                    Validate and Approve
                 </button>
             </div>
         </form>

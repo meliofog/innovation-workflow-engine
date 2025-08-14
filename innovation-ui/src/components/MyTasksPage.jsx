@@ -3,30 +3,23 @@ import { apiService } from '../api/apiService';
 import { TaskModal } from './TaskModal';
 import toast from 'react-hot-toast';
 
-export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
+export const MyTasksPage = ({ token, user, ideaNameFilter, taskTypeFilter }) => {
   const [assignedTasks, setAssignedTasks] = useState([]);
   const [groupTasks, setGroupTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedTask, setSelectedTask] = useState(null);
-   // This will now hold the full task detail object
-   const [selectedTaskDetail, setSelectedTaskDetail] = useState(null); 
-
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState(null);
 
   const fetchAllTasks = async () => {
     setLoading(true);
     setError('');
     try {
-      // 1. Call the single, unified endpoint
-      const allTasks = await apiService.getMyTasks(token, ideaNameFilter);
-
-      // 2. Filter the results into two separate lists for the UI
+      // Pass both filters to the API call
+      const allTasks = await apiService.getMyTasks(token, { ideaName: ideaNameFilter, taskDefinitionKey: taskTypeFilter });
       const assigned = allTasks.filter(taskDetail => taskDetail.task.assignee !== null);
       const group = allTasks.filter(taskDetail => taskDetail.task.assignee === null);
-      
       setAssignedTasks(assigned);
       setGroupTasks(group);
-      
     } catch (err) {
       setError('Could not fetch tasks.');
     } finally {
@@ -34,15 +27,16 @@ export const MyTasksPage = ({ token, user, ideaNameFilter }) => {
     }
   };
 
+  // Add taskTypeFilter to the dependency array
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (user) {
         fetchAllTasks();
       }
     }, 500);
-
     return () => clearTimeout(delayDebounceFn);
-  }, [token, user, ideaNameFilter]);
+  }, [token, user, ideaNameFilter, taskTypeFilter]);
+
 
   const handleClaim = async (taskId) => {
     const promise = apiService.claimTask(token, taskId);

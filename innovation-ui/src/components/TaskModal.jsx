@@ -7,6 +7,7 @@ import {
     PocConclusionForm,
     MvpPresentationForm,
     TeamCompositionForm,
+    BusinessPlanValidationForm,
     GenericTaskForm
 } from './TaskForms';
 
@@ -57,6 +58,8 @@ export const TaskModal = ({ details, token, onClose, onTaskCompleted }) => {
                 return <BusinessPlanForm task={fullDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_1oplie6': // Saisir la conclusion du POC
                 return <PocConclusionForm task={fullDetails.task} token={token} onTaskCompleted={onTaskCompleted} />;
+            case 'Activity_0wsbp7s': // Valider le business model et business plans définitifs
+                return <BusinessPlanValidationForm task={details.task} token={token} onTaskCompleted={onTaskCompleted} />;
             case 'Activity_0a8a9ls': // Présentation MVP aux clients pilotes
                 return <MvpPresentationForm
                             task={fullDetails.task}

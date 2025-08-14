@@ -5,6 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -44,6 +45,19 @@ public class FileStorageService {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file.", e);
+        }
+    }
+
+    public void deleteFile(String filename) {
+        try {
+            Path file = rootLocation.resolve(filename).normalize().toAbsolutePath();
+            Files.deleteIfExists(file);
+        } catch (NoSuchFileException e) {
+            // This is not a critical error if the file is already gone
+            System.out.println("Attempted to delete a file that does not exist: " + filename);
+        } catch (IOException e) {
+            // This is a more serious error
+            throw new RuntimeException("Could not delete the file. Error: " + e.getMessage());
         }
     }
 }

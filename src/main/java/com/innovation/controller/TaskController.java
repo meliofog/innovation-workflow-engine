@@ -8,6 +8,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.camunda.bpm.engine.task.Task;
+import org.camunda.bpm.engine.task.TaskQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,10 +36,10 @@ public class TaskController {
     @Autowired
     private IdeaRepository ideaRepository;
 
-    // THIS METHOD IS UPDATED to return rich details for each task
     @GetMapping
     public ResponseEntity<?> getMyTasks(
             @RequestParam(required = false) String ideaName,
+            @RequestParam(required = false) String taskDefinitionKey, // New filter
             HttpServletRequest request) {
 
         String username = (String) request.getAttribute("username");
@@ -46,21 +51,31 @@ public class TaskController {
 
         List<Task> allTasks = new ArrayList<>();
 
-        // --- THIS IS THE NEW LOGIC ---
-        // If the user is an admin, fetch ALL active tasks in the system.
         if (userGroups != null && userGroups.contains("camunda-admin")) {
-            allTasks = taskService.createTaskQuery().active().list();
+            TaskQuery query = taskService.createTaskQuery().active();
+            if (taskDefinitionKey != null && !taskDefinitionKey.isEmpty()) {
+                query.taskDefinitionKey(taskDefinitionKey);
+            }
+            allTasks = query.list();
         } else {
-            // Otherwise, use your robust logic to get assigned and group tasks.
-            List<Task> assignedTasks = taskService.createTaskQuery().taskAssignee(username).active().list();
-            List<Task> groupTasks = (userGroups == null || userGroups.isEmpty()) ? Collections.emptyList() :
-                    taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active().list();
+            // Your robust logic for regular users
+            TaskQuery assignedQuery = taskService.createTaskQuery().taskAssignee(username).active();
+            TaskQuery groupQuery = (userGroups == null || userGroups.isEmpty()) ? null :
+                    taskService.createTaskQuery().taskCandidateGroupIn(userGroups).taskUnassigned().active();
 
-            allTasks.addAll(assignedTasks);
-            allTasks.addAll(groupTasks);
+            if (taskDefinitionKey != null && !taskDefinitionKey.isEmpty()) {
+                assignedQuery.taskDefinitionKey(taskDefinitionKey);
+                if (groupQuery != null) {
+                    groupQuery.taskDefinitionKey(taskDefinitionKey);
+                }
+            }
+
+            allTasks.addAll(assignedQuery.list());
+            if (groupQuery != null) {
+                allTasks.addAll(groupQuery.list());
+            }
         }
 
-        // The rest of your logic remains the same.
         List<TaskDetailsDto> detailedTasks = allTasks.stream().map(task -> {
             Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
             Idea idea = ideaId != null ? ideaRepository.findById(ideaId).orElse(null) : null;
@@ -76,22 +91,17 @@ public class TaskController {
         return ResponseEntity.ok(detailedTasks);
     }
 
-    // --- THIS IS THE MISSING ENDPOINT ---
+    // --- getTaskDetails, claimTask, unclaimTask, and completeTask methods remain exactly as you provided them ---
     @GetMapping("/{taskId}/details")
     public ResponseEntity<?> getTaskDetails(@PathVariable String taskId) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found.");
         }
-
-        // Get the ideaId from the process variables
         Long ideaId = (Long) runtimeService.getVariable(task.getProcessInstanceId(), "ideaId");
         Idea idea = ideaRepository.findById(ideaId)
                 .orElseThrow(() -> new RuntimeException("Idea not found for task."));
-
-        TaskDto taskDto = TaskDto.fromEntity(task);
-        TaskDetailsDto taskDetails = new TaskDetailsDto(taskDto, idea);
-
+        TaskDetailsDto taskDetails = new TaskDetailsDto(TaskDto.fromEntity(task), idea);
         return ResponseEntity.ok(taskDetails);
     }
 
@@ -101,7 +111,6 @@ public class TaskController {
         if (username == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
-
         try {
             taskService.claim(taskId, username);
             return ResponseEntity.ok().build();
@@ -116,15 +125,12 @@ public class TaskController {
         if (username == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not found in token.");
         }
-
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-        // Security check: Only the current assignee can unclaim the task.
         if (task == null || !username.equals(task.getAssignee())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not the assignee of this task.");
         }
-
         try {
-            taskService.setAssignee(taskId, null); // Setting assignee to null unclaims the task
+            taskService.setAssignee(taskId, null);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not unclaim task: " + e.getMessage());
@@ -135,11 +141,9 @@ public class TaskController {
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> variables, HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-
         if (task == null || !username.equals(task.getAssignee())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not authorized to complete this task.");
         }
-
         if (variables.containsKey("dateEcheance")) {
             Object dateValue = variables.get("dateEcheance");
             if (dateValue instanceof String) {
@@ -148,7 +152,6 @@ public class TaskController {
                 variables.put("dateEcheance", dueDate);
             }
         }
-
         taskService.complete(taskId, variables);
         return ResponseEntity.ok().build();
     }
