@@ -4,7 +4,6 @@ import com.innovation.domain.Developpement;
 import com.innovation.domain.Document;
 import com.innovation.domain.Idea;
 import com.innovation.domain.POC;
-import com.innovation.dto.IdeaDetailsDto;
 import com.innovation.dto.FullIdeaDetailsDto;
 import com.innovation.repository.DeveloppementRepository;
 import com.innovation.repository.DocumentRepository;
@@ -33,11 +32,9 @@ public class IdeaService {
     @Autowired private RuntimeService runtimeService;
     @Autowired private TaskService taskService;
 
-    // Inject all necessary repositories
     @Autowired private DocumentRepository documentRepository;
     @Autowired private POCRepository pocRepository;
     @Autowired private DeveloppementRepository developpementRepository;
-
 
     public Idea createIdea(Idea idea) {
         Idea savedIdea = ideaRepository.save(idea);
@@ -54,6 +51,7 @@ public class IdeaService {
         }
         Idea idea = ideaRepository.findById(ideaId)
                 .orElseThrow(() -> new RuntimeException("Idea not found with id: " + ideaId));
+
         idea.setPriority(priority);
         ideaRepository.save(idea);
 
@@ -82,15 +80,12 @@ public class IdeaService {
         return ideaRepository.save(idea);
     }
 
-    // --- THIS METHOD IS NOW CORRECTED FOR CASCADE DELETE ---
     @Transactional
     public void deleteIdea(Long ideaId) {
-        // Step 1: Delete all dependent records first to avoid constraint violations.
         documentRepository.deleteAll(documentRepository.findByIdeaId(ideaId));
         pocRepository.findByIdeaId(ideaId).ifPresent(pocRepository::delete);
         developpementRepository.findByIdeaId(ideaId).ifPresent(developpementRepository::delete);
 
-        // Step 2: Find and delete the running process instance.
         ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
                 .processInstanceBusinessKey(ideaId.toString())
                 .singleResult();
@@ -102,7 +97,6 @@ public class IdeaService {
             LOGGER.warn("No running process instance found for idea ID: {}", ideaId);
         }
 
-        // Step 3: Now it's safe to delete the idea itself.
         ideaRepository.deleteById(ideaId);
         LOGGER.info("Deleted idea with ID: {}", ideaId);
     }
@@ -111,7 +105,6 @@ public class IdeaService {
         Idea idea = ideaRepository.findById(ideaId)
                 .orElseThrow(() -> new RuntimeException("Idea not found with id: " + ideaId));
 
-        // Fetch all related entities (they might be null if the stage hasn't been reached)
         POC poc = pocRepository.findByIdeaId(ideaId).orElse(null);
         Developpement developpement = developpementRepository.findByIdeaId(ideaId).orElse(null);
         List<Document> documents = documentRepository.findByIdeaId(ideaId);
@@ -119,6 +112,7 @@ public class IdeaService {
         return new FullIdeaDetailsDto(idea, poc, developpement, documents);
     }
 
+    // Existing global filter (unchanged)
     public List<Idea> getFilteredIdeas(String status, String priority) {
         boolean hasStatus = status != null && !status.isEmpty();
         boolean hasPriority = priority != null && !priority.isEmpty();
@@ -131,6 +125,26 @@ public class IdeaService {
             return ideaRepository.findByPriority(priority);
         } else {
             return ideaRepository.findAll();
+        }
+    }
+
+    // NEW: same filter but scoped to a specific creator (DB-side)
+    public List<Idea> getFilteredIdeasForCreator(String status, String priority, String createdBy) {
+        if (createdBy == null || createdBy.isEmpty()) {
+            return getFilteredIdeas(status, priority);
+        }
+
+        boolean hasStatus = status != null && !status.isEmpty();
+        boolean hasPriority = priority != null && !priority.isEmpty();
+
+        if (hasStatus && hasPriority) {
+            return ideaRepository.findByStatutAndPriorityAndCreatedBy(status, priority, createdBy);
+        } else if (hasStatus) {
+            return ideaRepository.findByStatutAndCreatedBy(status, createdBy);
+        } else if (hasPriority) {
+            return ideaRepository.findByPriorityAndCreatedBy(priority, createdBy);
+        } else {
+            return ideaRepository.findByCreatedBy(createdBy);
         }
     }
 }

@@ -29,8 +29,11 @@ public class Idea {
 
     private LocalDateTime dateStatus;
 
-    private LocalDateTime datePriorisation; // <-- ADD THIS
-    private LocalDateTime dateDernierRappel; // <-- ADD THIS
+    private LocalDateTime datePriorisation;
+
+    private LocalDateTime dateDernierRappel;
+
+    private String createdBy;
 
     public Idea() {
         this.dateCreation = LocalDateTime.now();

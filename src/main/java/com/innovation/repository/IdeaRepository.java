@@ -8,16 +8,17 @@ import java.util.List; // <-- Add this import
 @Repository
 public interface IdeaRepository extends JpaRepository<Idea, Long> {
 
-    // Counts how many ideas have a specific status
     long countByStatut(String statut);
-
-    // Counts how many ideas have a status that is in the provided list
     long countByStatutIn(List<String> statuses);
-
-    // NEW: Counts how many ideas have a specific priority
     long countByPriority(String priority);
 
     List<Idea> findByStatut(String statut);
     List<Idea> findByPriority(String priority);
     List<Idea> findByStatutAndPriority(String statut, String priority);
+
+    // --- NEW: scope by creator (efficient DB-side filtering) ---
+    List<Idea> findByCreatedBy(String createdBy);
+    List<Idea> findByStatutAndCreatedBy(String statut, String createdBy);
+    List<Idea> findByPriorityAndCreatedBy(String priority, String createdBy);
+    List<Idea> findByStatutAndPriorityAndCreatedBy(String statut, String priority, String createdBy);
 }

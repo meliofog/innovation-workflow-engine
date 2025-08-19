@@ -19,23 +19,38 @@ public class IdeaController {
     @Autowired
     private IdeaService ideaService;
 
-    // We no longer need PocService here, as IdeaService handles everything.
-
-    // Helper method for authorization checks
     private boolean isEmetteurOrAdmin(HttpServletRequest request) {
         List<String> userGroups = (List<String>) request.getAttribute("userGroups");
         return userGroups != null && (userGroups.contains("EM") || userGroups.contains("camunda-admin"));
     }
 
+    // Helper: get caller identity (adjust key names if your auth filter differs)
+    private String currentUsername(HttpServletRequest request) {
+        Object u = request.getAttribute("username");
+        if (u == null) u = request.getAttribute("userEmail");
+        return u == null ? null : u.toString();
+    }
+
     @GetMapping
     public ResponseEntity<List<Idea>> getIdeas(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String priority) {
-        List<Idea> ideas = ideaService.getFilteredIdeas(status, priority);
-        return ResponseEntity.ok(ideas);
+            @RequestParam(required = false) String priority,
+            HttpServletRequest request) {
+
+        List<String> userGroups = (List<String>) request.getAttribute("userGroups");
+        boolean isAdmin = userGroups != null && userGroups.contains("camunda-admin");
+        boolean isEmetteur = userGroups != null && userGroups.contains("EM");
+
+        if (isEmetteur && !isAdmin) {
+            String me = currentUsername(request);
+            List<Idea> ideas = ideaService.getFilteredIdeasForCreator(status, priority, me);
+            return ResponseEntity.ok(ideas);
+        } else {
+            List<Idea> ideas = ideaService.getFilteredIdeas(status, priority);
+            return ResponseEntity.ok(ideas);
+        }
     }
 
-    // This is now the single, definitive endpoint for getting all details for an idea.
     @GetMapping("/{ideaId}")
     public ResponseEntity<FullIdeaDetailsDto> getIdeaById(@PathVariable Long ideaId) {
         FullIdeaDetailsDto ideaDetails = ideaService.getIdeaDetails(ideaId);
@@ -46,6 +61,11 @@ public class IdeaController {
     public ResponseEntity<?> submitIdea(@RequestBody Idea idea, HttpServletRequest request) {
         if (!isEmetteurOrAdmin(request)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Emetteur or Admin users can submit ideas.");
+        }
+        // Stamp creator
+        String me = currentUsername(request);
+        if (me != null && (idea.getCreatedBy() == null || idea.getCreatedBy().isEmpty())) {
+            idea.setCreatedBy(me);
         }
         Idea createdIdea = ideaService.createIdea(idea);
         return ResponseEntity.ok(createdIdea);
@@ -70,8 +90,8 @@ public class IdeaController {
     }
 
     @PostMapping("/{processInstanceId}/prioritize")
-    public ResponseEntity<Idea> prioritizeIdea(@PathVariable String processInstanceId, @RequestBody Map<String, String> request) {
-        String priority = request.get("priority");
+    public ResponseEntity<Idea> prioritizeIdea(@PathVariable String processInstanceId, @RequestBody Map<String, String> requestBody) {
+        String priority = requestBody.get("priority");
         Idea updatedIdea = ideaService.prioritizeIdea(processInstanceId, priority);
         return ResponseEntity.ok(updatedIdea);
     }
