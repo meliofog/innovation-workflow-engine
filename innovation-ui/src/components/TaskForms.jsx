@@ -299,6 +299,34 @@ export const PrioritizationForm = ({ task, token, onTaskCompleted }) => {
   );
 };
 
+// ---- Move these OUTSIDE so their identity is stable ----
+const Select = ({ className = '', ...props }) => (
+  <select
+    {...props}
+    className={
+      "mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 " +
+      className
+    }
+  />
+);
+
+const Input = ({ className = '', ...props }) => (
+  <input
+    {...props}
+    className={
+      "mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 " +
+      className
+    }
+  />
+);
+
+const Label = ({ children, className = '', ...props }) => (
+  <label {...props} className={"block text-sm font-medium text-gray-700 " + className}>
+    {children}
+  </label>
+);
+
+// ---- Parent stays lean; no inline component defs ----
 export const QualificationForm = ({ task, token, onTaskCompleted }) => {
   const [decision, setDecision] = useState('VALIDEE');
   const [motifRejet, setMotifRejet] = useState('');
@@ -317,24 +345,6 @@ export const QualificationForm = ({ task, token, onTaskCompleted }) => {
       alert('Error completing task: ' + err.message);
     }
   };
-
-  const Select = ({ ...props }) => (
-    <select
-      {...props}
-      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
-    />
-  );
-  const Input = ({ ...props }) => (
-    <input
-      {...props}
-      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
-    />
-  );
-  const Label = ({ children, ...props }) => (
-    <label {...props} className="block text-sm font-medium text-gray-700">
-      {children}
-    </label>
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
