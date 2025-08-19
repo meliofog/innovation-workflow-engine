@@ -31,6 +31,9 @@ export const AppLayout = ({ token, user, onLogout }) => {
   const [userCreateTick, setUserCreateTick] = useState(0); // drives opening create-user modal
 
   const isEmetteur = user?.groups?.includes('EM');
+  const isCQ = user?.groups?.includes('CQ');
+  const isCSI = user?.groups?.includes('CSI');
+  const isDEV = user?.groups?.includes('DEV');
   const isAdmin = user?.groups?.includes('camunda-admin');
 
   const handleSaveIdea = () => {
@@ -93,6 +96,9 @@ export const AppLayout = ({ token, user, onLogout }) => {
               <div className="hidden md:flex items-center gap-2">
                 {isEmetteur && <RolePill>EM</RolePill>}
                 {isAdmin && <RolePill>Admin</RolePill>}
+                {isCQ && <RolePill>CQ</RolePill>}
+                {isCSI && <RolePill>CSI</RolePill>}
+                {isDEV && <RolePill>DEV</RolePill>}
               </div>
               <div className="flex items-center gap-3">
                 <span className="hidden sm:block text-sm text-gray-700">
